@@ -1,0 +1,5 @@
+src/Tyc.ws.Api/bin/
+src/Tyc.ws.Api/obj/
+src/Tyc.ws.Features/obj/
+src/Tyc.ws.Features/bin/
+.vs/

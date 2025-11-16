@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{86EB0831-AAD8-40C0-925F-52F34DF259A1}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{82D8D8D8-1D93-4819-91FF-126FFD163FA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tyc.ws.Api", "src\Tyc.ws.Api\Tyc.ws.Api.csproj", "{1DF46A6A-AABE-FA29-2E75-A3291F0429E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tyc.ws.Features", "src\Tyc.ws.Features\Tyc.ws.Features.csproj", "{68E44A88-2C7A-4300-AEE1-FE018521F587}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1DF46A6A-AABE-FA29-2E75-A3291F0429E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DF46A6A-AABE-FA29-2E75-A3291F0429E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DF46A6A-AABE-FA29-2E75-A3291F0429E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DF46A6A-AABE-FA29-2E75-A3291F0429E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68E44A88-2C7A-4300-AEE1-FE018521F587}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68E44A88-2C7A-4300-AEE1-FE018521F587}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68E44A88-2C7A-4300-AEE1-FE018521F587}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68E44A88-2C7A-4300-AEE1-FE018521F587}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1DF46A6A-AABE-FA29-2E75-A3291F0429E9} = {82D8D8D8-1D93-4819-91FF-126FFD163FA6}
+		{68E44A88-2C7A-4300-AEE1-FE018521F587} = {82D8D8D8-1D93-4819-91FF-126FFD163FA6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BC07D186-4BDF-418C-A32C-FDEC0B396D0D}
+	EndGlobalSection
+EndGlobal
