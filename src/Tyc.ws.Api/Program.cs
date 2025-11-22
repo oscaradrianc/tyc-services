@@ -9,6 +9,8 @@ using solg.lib.settings;
 using Solg.Common.Application;
 using Solg.Common.Infrastructure.Configuration;
 using Solg.Common.Infrastructure.EventBus;
+using Solg.Common.Infrastructure.Fw.Data;
+using Solg.Common.Infrastructure.Fw.Session;
 using Solg.Common.Presentation.Endpoints;
 using Tyc.ws.Api.Infrastructure;
 using Tyc.ws.Api.Middleware;
@@ -17,12 +19,12 @@ using Tyc.ws.Api.Security;
 using Tyc.ws.Features;
 using Tyc.ws.Features.Consentimientos;
 using Tyc.ws.Features.Examples;
+using Tyc.ws.Features.Shared.Services;
 using IMapper = MapsterMapper.IMapper;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddJwtConfiguration(builder.Configuration);
-
 builder.Services.AddAuthorization();
 
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
@@ -65,13 +67,19 @@ mapsterConfig.Scan(Assembly.GetExecutingAssembly());
 builder.Services.AddSingleton(mapsterConfig);
 builder.Services.AddScoped<IMapper, ServiceMapper>();
 
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddScoped<IDbContextProvider, DbContextProvider>();
+builder.Services.AddScoped<ICustomUserSessionService, CustomUserSessionService>();
+
 // Registrar endpoints
 builder.Services.AddConsentimientosFeature(builder.Configuration);
 builder.Services.AddExamplesFeature(builder.Configuration);
 
+builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("NombrePolitica", policy =>
+    options.AddPolicy("_myAllowSpecificOrigins", policy =>
     {
         //Restringir politica -> esta permite TODO
         policy
@@ -81,9 +89,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+
 WebApplication app = builder.Build();
 
-app.UseCors("NombrePolitica");
+app.UseCors("_myAllowSpecificOrigins");
 app.UseAuthentication();
 app.UseAuthorization();
 

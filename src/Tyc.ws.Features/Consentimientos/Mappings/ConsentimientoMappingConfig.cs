@@ -1,16 +1,18 @@
 ﻿using Mapster;
-using ServiceStack;
-using Tycws.Api.Features.Consentimientos.Contracts;
-using Tycws.Api.Features.Consentimientos.Entities;
+using Tyc.ws.Features.Consentimientos.Contracts;
+using Tyc.ws.Features.Consentimientos.Entities;
 
-namespace Tycws.Api.Features.Consentimientos.Mappings;
+namespace Tyc.ws.Features.Consentimientos.Mappings;
 
 public class ConsentimientoMappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<ConsentimientoRQ, Consentimiento>()
-            .Map(dest => dest.ConsFechaCreacionConsentimiento, src => DateTime.UtcNow)
-            .Map(dest => dest.ConsGuid, src => Guid.NewGuid());
+            .Map(dest => dest.ConsNombre, src => src.Nombres)
+            .Map(dest => dest.ConsApellido, src => src.Apellidos)
+            .Map(dest => dest.ConsEmail, src => src.Email)
+            .Map(dest => dest.ConsMovil, src => src.Telefono)
+            .Map(dest => dest.ConsIdentificacion, src => src.Identificacion);
     }
 }

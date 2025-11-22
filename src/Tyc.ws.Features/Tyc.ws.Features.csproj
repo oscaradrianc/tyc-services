@@ -1,12 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
+		<PackageReference Include="FluentValidation" Version="12.1.0" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
 		<PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
-		<PackageReference Include="Solg.Common.application" Version="0.0.6" />
-		<PackageReference Include="Solg.Common.Presentation" Version="0.0.6" />
+    <PackageReference Include="ServiceStack" Version="8.10.0" />
+    <PackageReference Include="Solg.Common.application" Version="0.0.5" />
+    <PackageReference Include="Solg.Common.Presentation" Version="0.0.5" />
     <PackageReference Include="Solg.Common.Infrastructure" Version="0.0.3-beta.1" />
     <PackageReference Include="Solg.Common.Infrastructure.Fw" Version="0.0.4-beta.1" />
-		<PackageReference Include="administradorcore.basehost" Version="3.1.9-beta8" />
+    <PackageReference Include="xmart.ids.filesprocessor.lib" Version="0.0.4" />
 	</ItemGroup>
 </Project>

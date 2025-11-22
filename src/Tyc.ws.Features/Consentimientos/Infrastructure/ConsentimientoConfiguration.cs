@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Tycws.Api.Features.Consentimientos.Entities;
+using Tyc.ws.Features.Consentimientos.Entities;
 
-namespace Tycws.Api.Features.Consentimientos.Infrastructure;
+namespace Tyc.ws.Features.Consentimientos.Infrastructure;
 
 public class ConsentimientoConfiguration : IEntityTypeConfiguration<Consentimiento>
 {
@@ -52,7 +52,8 @@ public class ConsentimientoConfiguration : IEntityTypeConfiguration<Consentimien
             .HasMaxLength(200);
 
         builder.Property(e => e.ConsFechaCreacionConsentimiento)
-            .HasColumnName("cons_fechacreacionconsentimient");
+            .HasColumnName("cons_fechacreacionconsentimient")
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         builder.Property(e => e.ConsFechaAceptacionConsentimiento)
             .HasColumnName("cons_fechaaceptacionconsentimie");

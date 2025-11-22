@@ -1,4 +1,4 @@
-﻿namespace Tycws.Api.Features.Consentimientos.Entities;
+﻿namespace Tyc.ws.Features.Consentimientos.Entities;
 
 public class Consentimiento
 {

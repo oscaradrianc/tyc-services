@@ -1,6 +1,9 @@
 ﻿using Solg.Common.Presentation.Endpoints;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Tyc.ws.Features.Infrastructure.Data;
+using Tyc.ws.Features.Infrastructure.Data.Abstractions;
+using Tyc.ws.Features.Consentimientos.Infrastructure;
 
 namespace Tyc.ws.Features.Consentimientos;
 public static class ConsentimientosFeature
@@ -13,7 +16,9 @@ public static class ConsentimientosFeature
     {
         services.AddEndpoints(AssemblyReference.Assembly);
         services.AddInfrastructure(configuration);
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        services.AddScoped<IConsentimientoRepository, ConsentimientoRepository>();
         return services;
     }
 

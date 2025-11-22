@@ -22,7 +22,7 @@ internal static class AuthJwtConfiguration
                    ValidateAudience = true,
                    ValidAudience = configuration["Audience"],
                    ValidateLifetime = true,
-                   ValidateIssuerSigningKey = true,
+                   ValidateIssuerSigningKey = false,
                    IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(configuration["jwt.AuthKeyBase64"] ?? ""))
                };
                options.ConfigurationManager = null;
