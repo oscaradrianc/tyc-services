@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>    
+    <PackageReference Include="administradorcore.modelo" />
+    <PackageReference Include="administradorcore.implementacion" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Tipos\" />
+  </ItemGroup>
+
+</Project>

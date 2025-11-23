@@ -1,0 +1,35 @@
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0.203-jammy AS build														
+WORKDIR /app
+
+ARG NUGET_KEY
+ARG SONAR_TOKEN
+
+RUN dotnet nuget add source --username david-gomez-sgsas --password $NUGET_KEY --store-password-in-clear-text --name GitHub "https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json"
+
+# copy csproj and restore as distinct layers
+COPY *.sln .
+COPY Directory.Build.props .
+COPY Directory.Packages.props .
+COPY SIGO.Modelo/*.csproj ./SIGO.Modelo/
+COPY SIGO.Implementacion/*.csproj ./SIGO.Implementacion/
+COPY SIGO.Interface/*.csproj ./SIGO.Interface/
+COPY FrameAppWS/*.csproj ./FrameAppWS/
+RUN dotnet restore -s https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json -s https://api.nuget.org/v3/index.json -s https://nuget.devexpress.com/BJhx7YFZYJxRgRyWzgVAnAgxOlEy8rqZxOJuegPYyAiPLjRcGp/api
+
+# copy everything else and build app
+COPY SIGO.Modelo/. ./SIGO.Modelo/
+COPY SIGO.Implementacion/. ./SIGO.Implementacion/
+COPY SIGO.Interface/. ./SIGO.Interface/
+
+COPY FrameAppWS/. ./FrameAppWS/
+
+WORKDIR /app/FrameAppWS
+
+ENV PATH="${PATH}:~/.dotnet/tools"
+RUN apk add openjdk17-jre --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+
+RUN dotnet tool install --global dotnet-sonarscanner --version 6.2.0
+
+RUN dotnet sonarscanner begin /k:"sigo-dotnet" /d:sonar.host.url=https://sonarqube.sgsas.co /d:sonar.token=$SONAR_TOKEN
+RUN dotnet build
+RUN dotnet sonarscanner end /d:sonar.token=$SONAR_TOKEN

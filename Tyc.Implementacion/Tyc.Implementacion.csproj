@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <Compile Remove="wwwroot\**" />
+    <EmbeddedResource Remove="wwwroot\**" />
+    <None Remove="wwwroot\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="administradorcore.implementacion" />
+    <PackageReference Include="administradorcore.cifrar" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="Mapster" />    
+    <PackageReference Include="solg.lib.geo" />
+    <PackageReference Include="Stubble.Core" />
+    <PackageReference Include="System.Data.OleDb" />
+    <PackageReference Include="TimeZoneConverter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SIGO.Interface\Tyc.Interface.csproj" />
+    <ProjectReference Include="..\SIGO.Modelo\Tyc.Modelo.csproj" />
+  </ItemGroup>
+
+</Project>

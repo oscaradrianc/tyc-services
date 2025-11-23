@@ -1,0 +1,43 @@
+<Project>
+  <ItemGroup>
+    <!--                    Framework libraries                           -->
+    <PackageVersion Include="administradorcore.basehost" Version="3.2.0-beta4" />
+    <PackageVersion Include="administradorcore.implementacion" Version="3.2.0-beta4" />
+    <PackageVersion Include="administradorcore.modelo" Version="3.2.0-beta4" />
+    <PackageVersion Include="administradorcore.servicelogs" Version="3.2.0-beta4" />
+    <!--                  Cifrado de datos                           -->
+    <PackageVersion Include="administradorcore.cifrar" Version="3.2.0-beta4" />
+    <PackageVersion Include="Mapster" Version="7.4.0" />
+    <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1" />
+    <PackageVersion Include="Scrutor" Version="6.1.0" />
+    <!--                                                       -->
+    <PackageVersion Include="utilidadescore" Version="3.2.0-beta4" />
+    <PackageVersion Include="solg.lib.geo" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="DevExpress.Document.Processor.es" Version="[24.2.8]" />
+    <PackageVersion Include="DevExpress.Drawing.Skia.es" Version="[24.2.8]" />
+    <PackageVersion Include="DevExpress.Pdf.SkiaRenderer.es" Version="[24.2.8]" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Serilog" Version="4.2.0" />
+    <PackageVersion Include="Serilog.Enrichers.CorrelationId" Version="3.0.1" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="2.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.Process" Version="3.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.Thread" Version="3.1.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageVersion Include="Serilog.Sinks.ElasticSearch" Version="9.0.3" />
+    <PackageVersion Include="Serilog.Settings.Configuration" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.HttpContext" Version="8.0.9" />
+    <PackageVersion Include="ServiceStack.Logging.Serilog" Version="8.2.2" />
+    <PackageVersion Include="ServiceStack.Server" Version="8.0.0" />
+    <PackageVersion Include="AWSSDK.Core" Version="3.7.300.12" />
+    <PackageVersion Include="System.Data.OleDb" Version="9.0.1" />
+    <PackageVersion Include="System.CodeDom" Version="9.0.1" />
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.2.0" />
+    <PackageVersion Include="Stubble.Core" Version="1.10.8" />
+    <PackageVersion Include="TimeZoneConverter" Version="7.0.0" />
+    <PackageVersion Include="ServiceStack.Redis" Version="8.0.0" />
+  </ItemGroup>
+</Project>

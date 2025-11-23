@@ -1,0 +1,20 @@
+pipeline {
+  agent { label 'COMPILATION_MACHINE' }
+  environment { 
+    NUGET_KEY = credentials('Nuget-token')
+    SONAR_TOKEN = credentials('sonarqube')
+  }
+  stages {
+    stage('Analysis') {
+      steps {
+        sh "docker build --build-arg NUGET_KEY=$NUGET_KEY --build-arg SONAR_TOKEN=$SONAR_TOKEN --output out -f Dockerfile.sonarqube ."
+		    sh 'yes | docker system prune --volumes'
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}

@@ -1,0 +1,39 @@
+pipeline {
+  agent { label 'COMPILATION_MACHINE' }
+  environment { 
+    DOCKER_REPO = "310500478531.dkr.ecr.us-east-1.amazonaws.com/sigo.services"
+  }
+  stages {
+    stage('Create image') {
+      steps {
+			  withCredentials([string(credentialsId: 'Nuget-token', variable: 'TOKEN')]) {
+          sh "docker build --build-arg NUGET_KEY=$TOKEN . -t ${DOCKER_REPO}:latest"
+        }
+      }
+    }
+		stage('Push image') {
+      steps {
+        sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 310500478531.dkr.ecr.us-east-1.amazonaws.com'
+				sh 'docker push ${DOCKER_REPO}:latest'
+      }
+    }
+	  stage('Restart deployment') {
+      environment{
+        AWS_CREDENTIALS_sgsas = credentials('AWS_K8_CICD_SIGO')
+        AWS_ACCESS_KEY_ID = "$AWS_CREDENTIALS_sgsas_USR"
+		    AWS_SECRET_ACCESS_KEY = "$AWS_CREDENTIALS_sgsas_PSW"
+      }
+      steps {
+			  sh 'kubectl config use-context arn:aws:eks:us-east-1:310500478531:cluster/eks-clus-co-test'
+			  sh 'kubectl rollout restart deploy test-sigows-deployment -n test'
+      }
+    }
+  }
+  post {
+    always {
+      sh 'docker rmi ${DOCKER_REPO}:latest'
+      sh 'yes | docker system prune --volumes'
+      cleanWs()
+    }
+  }
+}

@@ -1,0 +1,38 @@
+pipeline {
+  agent { label 'COMPILATION_MACHINE' }
+  environment { 
+    DOCKER_REPO = "310500478531.dkr.ecr.us-east-1.amazonaws.com/sigo.services"
+  }
+  stages {
+    stage('Create image') {
+      steps {
+        withCredentials([string(credentialsId: 'Nuget-token', variable: 'TOKEN')]) {
+          sh "docker build --build-arg NUGET_KEY=$TOKEN . -t ${DOCKER_REPO}:${BUILD_NUMBER}"
+        }
+      }
+    }
+	  stage('Push image') {
+      steps {
+        sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 310500478531.dkr.ecr.us-east-1.amazonaws.com'
+		    sh 'docker push ${DOCKER_REPO}:${BUILD_NUMBER}'
+      }
+    }
+    stage('Clean image') {
+      steps {
+	    sh 'docker rmi ${DOCKER_REPO}:${BUILD_NUMBER}'
+        sh 'yes | docker system prune --volumes'
+      }
+    }
+    stage('Trigger ManifestUpdate') {
+      steps {
+        echo "triggering Updatemanifest job"
+        build job: 'Updatemanifest', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}

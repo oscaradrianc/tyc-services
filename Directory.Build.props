@@ -1,17 +1,37 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <AnalysisMode>All</AnalysisMode>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TargetFramework>net8.0</TargetFramework>
+	  <UserSecretsId>a0f6f205-78ce-46b6-ac1d-e6d82a3d9e83</UserSecretsId>
+	  <NoWin32Manifest>true</NoWin32Manifest>
+      <Version>2025.1021.31</Version>
+      <Company>Soluciones Globales SAS</Company>
+      <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+      <EnableCentralPackageManagement>true</EnableCentralPackageManagement>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' != '.dcproj'">
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.15.0.120848">
-      <PrivateAsprivates>all</PrivateAsprivates>
-      <IncludeAsprivates>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAsprivates>
-    </PackageReference>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <Optimize>false</Optimize>
+	  <DefineConstants>DEBUG;TRACE</DefineConstants>
+	  <DebugType>full</DebugType>
+	  <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+ 
+  <ItemGroup>
+		<Compile Remove="app_data\**" />
+		<Compile Remove="Blobs\**" />
+		<Content Remove="App5igo\**" />
+		<EmbeddedResource Remove="app_data\**" />
+		<EmbeddedResource Remove="Blobs\**" />
+		<EmbeddedResource Remove="App5igo\**" />
+		<None Remove="app_data\**" />
+		<None Remove="Blobs\**" />
+		<None Remove="App5igo\**" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="App5igo\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Target Name="CreateAppDataFolder" AfterTargets="AfterPublish">
+    <MakeDir Directories="$(PublishDir)AppData" Condition="!Exists('$(PublishDir)App5igo')" />
+  </Target>
 </Project>
