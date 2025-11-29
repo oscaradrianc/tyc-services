@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Tyc.Modelo.Response;
+﻿namespace Tyc.Interface.Response;
 public class ApiResponse<T>
 {
     public bool Success { get; set; }

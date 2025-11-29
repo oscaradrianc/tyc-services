@@ -17,9 +17,18 @@ using ServiceStack.Redis;
 using solg.lib.settings;
 using System;
 using System.Reflection;
+using Tyc.Implementacion.Empresas;
+using Tyc.Implementacion.Empresas.Repositories;
+using Tyc.Implementacion.Consentimientos;
 using Tyc.Implementacion.Consentimientos.Mappings;
 using Tyc.Implementacion.Consentimientos.Repositories;
+using Tyc.Implementacion.Firmas.Repositories;
+using Tyc.Implementacion.Textos;
+using Tyc.Implementacion.Textos.Repositories;
 using Tyc.Interface.Repositories;
+using Tyc.Interface.Request;
+using Tyc.Interface.Services;
+using FrameAppWS.Middleware;
 
 namespace FrameAppWS;
 public class Program
@@ -50,8 +59,17 @@ public class Program
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
 
-
             builder.Services.AddScoped<IConsentimientoRepository, ConsentimientoRepository>();
+            builder.Services.AddScoped<ITextoRepository, TextoRepository>();
+            builder.Services.AddScoped<IEmpresaRepository, EmpresaRepository>();
+            builder.Services.AddScoped<IFirmaRepository, FirmaRepository>();
+
+            builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
+
+            builder.Services.AddScoped<ITextoService, TextosBL>();
+            builder.Services.AddScoped<IEmpresaService, EmpresasBL>();
+
+            builder.Services.AddMemoryCache();
 
             builder.Services.Configure<FormOptions>(x =>
             {
@@ -66,6 +84,7 @@ public class Program
             });
 
             builder.Services.AddHostedService<MonitoringWorker>();
+            
 
             var settings = Settings.GetInstance().SetConfiguration(builder.Configuration);
             settings.SetDbConfig(true);
@@ -85,13 +104,20 @@ public class Program
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }
+            }      
 
-            app.UseServiceStack(new AppHostFramework(Log.Logger)
+            var appHost = new AppHostFramework(Log.Logger)
             {
                 AppSettings = new NetCoreAppSettings(builder.Configuration)
-            });
+            };
 
+            // Registrar assemblies adicionales donde están los servicios
+            appHost.ServiceAssemblies.Add(typeof(ConsentimientoRQ).Assembly);
+
+            var baseDomain = builder.Configuration["Cors:BaseDomain"] ?? "midominio.com";
+            app.UseDynamicCors(baseDomain);
+
+            app.UseServiceStack(appHost);
 
             try
             {

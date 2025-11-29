@@ -7,12 +7,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ServiceStack.Redis" />
+    <PackageReference Include="Mapster" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SIGO.Modelo\Tyc.Modelo.csproj" />
-    <ProjectReference Include="..\Tyc.Implementacion\Tyc.Implementacion.csproj" />
+    <ProjectReference Include="..\Tyc.Modelo\Tyc.Modelo.csproj" />
   </ItemGroup>
 
 </Project>

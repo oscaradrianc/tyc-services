@@ -1,6 +1,6 @@
 ﻿using Mapster;
 using Tyc.Modelo.Contexto;
-using Tyc.Modelo.Request;
+using Tyc.Interface.Request;
 
 namespace Tyc.Implementacion.Consentimientos.Mappings;
         

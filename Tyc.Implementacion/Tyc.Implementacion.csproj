@@ -7,19 +7,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Mapster" />
     <PackageReference Include="administradorcore.implementacion" />
     <PackageReference Include="administradorcore.cifrar" />
-    <PackageReference Include="DocumentFormat.OpenXml" />
-    <PackageReference Include="Mapster" />    
-    <PackageReference Include="solg.lib.geo" />
-    <PackageReference Include="Stubble.Core" />
-    <PackageReference Include="System.Data.OleDb" />
-    <PackageReference Include="TimeZoneConverter" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SIGO.Interface\Tyc.Interface.csproj" />
-    <ProjectReference Include="..\SIGO.Modelo\Tyc.Modelo.csproj" />
+    <ProjectReference Include="..\Tyc.Interface\Tyc.Interface.csproj" />
+    <ProjectReference Include="..\Tyc.Modelo\Tyc.Modelo.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Parametrizacion\Mappings\" />
+    <Folder Include="Parametrizacion\Repositories\" />
   </ItemGroup>
 
 </Project>

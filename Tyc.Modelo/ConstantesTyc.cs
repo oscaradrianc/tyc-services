@@ -1,6 +1,7 @@
 ﻿namespace Tyc.Modelo
 {    public static class ConstantesTyc
     {
+        public const string llaveParametroLink = "aF8S-Z";
         public const string KeyRutaTemporalMapas = "RutaTemporalMapas";
         public const string KeyConexionPostgis = "ConexionPostgis";
         public const string KeyUrlMapServer = "UrlMapServer";

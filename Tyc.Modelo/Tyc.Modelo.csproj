@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>    
-    <PackageReference Include="administradorcore.modelo" />
-    <PackageReference Include="administradorcore.implementacion" />
+    <PackageReference Include="administradorcore.modelo" />    
   </ItemGroup>
 
   <ItemGroup>

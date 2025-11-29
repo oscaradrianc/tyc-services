@@ -1,10 +1,6 @@
 ﻿using Devart.Data.Linq.Mapping;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tyc.Modelo.Contexto
 {
@@ -12,17 +8,17 @@ namespace Tyc.Modelo.Contexto
     [Table(Name = "tgen_consentimientos")]
     public class Consentimiento
     {
-        [Column(Name = "cons_cons", IsPrimaryKey = true)]
+        [Column(Name = "cons_cons", IsPrimaryKey = true, IsDbGenerated = true, AutoSync = AutoSync.OnInsert)]
         public int ConsConsecuencia { get; set; }
         
-        [Column(Name = "agen_agen")]
-        public int? AgenAgencia { get; set; }
+        [Column(Name = "empr_empr")]
+        public int EmpresaId { get; set; }
 
         [Column(Name = "usua_usua")]
         public int? UsuaUsuario { get; set; }
 
-        [Column(Name = "text_textterminosagencia")]
-        public int? TextTerminosAgencia { get; set; }
+        [Column(Name = "text_textterminosEmpresa")]
+        public int? TextTerminosEmpresa { get; set; }
 
         [Column(Name = "text_textterminocompartirinfo")]
         public int? TgeTextTerminoCompartirInfo { get; set; }
@@ -45,14 +41,14 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "cons_identificacion")]
         public string? ConsIdentificacion { get; set; }
 
-        [Column(Name = "cons_fechacreacionconsentimient")]
+        [Column(Name = "cons_fechacreacionconsentimient", IsDbGenerated = true)]
         public DateTime? ConsFechaCreacionConsentimiento { get; set; }
 
         [Column(Name = "cons_fechaaceptacionconsentimie")]
         public DateTime? ConsFechaAceptacionConsentimiento { get; set; }
 
-        [Column(Name = "cons_aceptoterminosagencia")]
-        public string? ConsAceptoTerminosAgencia { get; set; }
+        [Column(Name = "cons_aceptoterminosEmpresa")]
+        public string? ConsAceptoTerminosEmpresa { get; set; }
 
         [Column(Name = "cons_aceptoterminoscompartirinf")]
         public string? ConsAceptoTerminosCompartirInfo { get; set; }

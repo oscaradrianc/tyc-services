@@ -12,76 +12,78 @@ namespace Tyc.Modelo
 
     public class TycBaseContext : DataContext
     {
-        public MotorBD Motor { get; set; }
-
-        public Table<Consentimiento> Consentimientos { get; set; }
-
         public TycBaseContext(System.Data.IDbConnection connection) : base(connection) { }
         public TycBaseContext(string connectionString) : base(connectionString) { }
 
+        public MotorBD Motor { get; set; }
+        public Table<Consentimiento> Consentimientos { get; set; }
+        public Table<Texto> Textos { get; set; }
+        public Table<Empresa> Empresas { get; set; }
+        public Table<Firma> Firmas { get; set; }
+
+    }
 
 
+    [Provider(typeof(Devart.Data.PostgreSql.Linq.Provider.PgSqlDataProvider))]
+    public class TycContextPostgreSQL : TycBaseContext
+    {
+        public TycContextPostgreSQL(System.Data.IDbConnection connection) : base(connection) { }
+        public TycContextPostgreSQL(string connectionString) : base(connectionString) { }
+    }
 
-        [Provider(typeof(Devart.Data.PostgreSql.Linq.Provider.PgSqlDataProvider))]
-        public class SigoContextPostgreSQL : TycBaseContext
+    [Provider(typeof(Devart.Data.Oracle.Linq.Provider.OracleDataProvider))]
+    public class TycContextOracle : TycBaseContext
+    {
+        public TycContextOracle(System.Data.IDbConnection connection) : base(connection) { }
+        public TycContextOracle(string connectionString) : base(connectionString) { }
+    }
+
+    [Provider(typeof(Devart.Data.SqlServer.Linq.Provider.SqlDataProvider))]
+    public class TycContextSqlServer : TycBaseContext
+    {
+        public TycContextSqlServer(System.Data.IDbConnection connection) : base(connection) { }
+        public TycContextSqlServer(string connectionString) : base(connectionString) { }
+    }
+
+    public static class TycContext
+    {
+        public static TycBaseContext DataContext(CustomUserSession customUserSession)
         {
-            public SigoContextPostgreSQL(System.Data.IDbConnection connection) : base(connection) { }
-            public SigoContextPostgreSQL(string connectionString) : base(connectionString) { }
+            return DataContext(customUserSession.ProdConnectionString, customUserSession.MotorProd);
         }
 
-        [Provider(typeof(Devart.Data.Oracle.Linq.Provider.OracleDataProvider))]
-        public class SigoContextOracle : TycBaseContext
+        public static TycBaseContext DataContext(string connectionString, MotorBD motor)
         {
-            public SigoContextOracle(System.Data.IDbConnection connection) : base(connection) { }
-            public SigoContextOracle(string connectionString) : base(connectionString) { }
-        }
+            TycBaseContext res;
 
-        [Provider(typeof(Devart.Data.SqlServer.Linq.Provider.SqlDataProvider))]
-        public class SigoContextSqlServer : TycBaseContext
-        {
-            public SigoContextSqlServer(System.Data.IDbConnection connection) : base(connection) { }
-            public SigoContextSqlServer(string connectionString) : base(connectionString) { }
-        }
-
-        public static class SigoContext
-        {
-            public static TycBaseContext DataContext(CustomUserSession customUserSession)
+            if (motor == MotorBD.ORACLE)
             {
-                return DataContext(customUserSession.ProdConnectionString, customUserSession.MotorProd);
+                OracleMonitor oracleMonitor = new OracleMonitor();
+                oracleMonitor.IsActive = true;
+                res = new TycContextOracle(connectionString)
+                {
+                    Motor = MotorBD.ORACLE
+                };
+            }
+            else if (motor == MotorBD.POSTGRESQL)
+            {
+                PgSqlMonitor pgSqlMonitor = new PgSqlMonitor();
+                pgSqlMonitor.IsActive = true;
+                res = new TycContextPostgreSQL(connectionString)
+                {
+                    Motor = MotorBD.POSTGRESQL
+                };
+            }
+            else
+            {
+                res = new TycContextSqlServer(connectionString)
+                {
+                    Motor = MotorBD.SQLSERVER
+                };
             }
 
-            public static TycBaseContext DataContext(string connectionString, MotorBD motor)
-            {
-                TycBaseContext res;
-
-                if (motor == MotorBD.ORACLE)
-                {
-                    OracleMonitor oracleMonitor = new OracleMonitor();
-                    oracleMonitor.IsActive = true;
-                    res = new SigoContextOracle(connectionString)
-                    {
-                        Motor = MotorBD.ORACLE
-                    };
-                }
-                else if (motor == MotorBD.POSTGRESQL)
-                {
-                    PgSqlMonitor pgSqlMonitor = new PgSqlMonitor();
-                    pgSqlMonitor.IsActive = true;
-                    res = new SigoContextPostgreSQL(connectionString)
-                    {
-                        Motor = MotorBD.POSTGRESQL
-                    };
-                }
-                else
-                {
-                    res = new SigoContextSqlServer(connectionString)
-                    {
-                        Motor = MotorBD.SQLSERVER
-                    };
-                }
-
-                return res;
-            }
+            return res;
         }
     }
+    
 }
