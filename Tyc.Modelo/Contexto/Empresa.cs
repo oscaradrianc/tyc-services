@@ -14,10 +14,10 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "empr_guid")]
         public Guid? Guid { get; set; }
 
-        [Column(Name = "agent_name")]
+        [Column(Name = "empr_nombre")]
         public string Nombre { get; set; }
 
-        [Column(Name = "empr_ciudadEmpresa")]
+        [Column(Name = "empr_ciudad")]
         public string CiudadEmpresa { get; set; }
 
         [Column(Name = "empr_direccion")]
@@ -35,7 +35,7 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "empr_logoiso9000")]
         public string LogoIso9000 { get; set; }
 
-        [Column(Name = "agent_nombrecontacto")]
+        [Column(Name = "empr_nombrecontacto")]
         public string NombreContacto { get; set; }
 
         [Column(Name = "empr_maildelcontacto")]
@@ -86,7 +86,7 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "empr_solicitaidentificacion")]
         public string SolicitaIdentificacion { get; set; }
 
-        [Column(Name = "empr_Empresabloqueada")]
+        [Column(Name = "empr_estado")]
         public string Estado { get; set; }
 
         [Column(Name = "empr_manejacorporativo")]

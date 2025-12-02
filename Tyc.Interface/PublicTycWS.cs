@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Administrador.ServiceLogs.Auth;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
 using System;
@@ -7,6 +8,7 @@ using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
+using static Tyc.Interface.Request.ConsentimientoPublicoRQ;
 using static Tyc.Modelo.TycBaseContext;
 
 namespace Tyc.Interface;
@@ -95,4 +97,50 @@ public class PublicTycWS : Service
         _cache.Set(cacheKey, requestCount + 1, TimeSpan.FromMinutes(1));
         return true;
     }
+
+    public ApiResponse<bool> Put(ActualizarConsentimiento request)
+    {
+        string clientIp = Request.UserHostAddress;
+
+        if (!ValidarRateLimit(clientIp))
+        {
+            throw new HttpError(HttpStatusCode.TooManyRequests,
+                    "TooManyRequests",
+                    "Demasiados intentos. Intente en 1 minuto.");
+        }
+
+        // 2. Validación básica
+        if (string.IsNullOrWhiteSpace(request.Subdominio) || string.IsNullOrWhiteSpace(request.Id))
+            throw HttpError.BadRequest("Parámetros inválidos");
+
+        var settings = solg.lib.settings.Settings.GetInstance();
+        settings.SetDbConfig(true);
+
+        //var connectionString = settings.GetAppSetting.GetConnection("SIGO"); 
+        string connectionString = settings.GetConnection("Tyc").connectionString;
+        var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+        using (var dbContext = TycContext.DataContext(connectionString, motorBD))
+        {
+            try
+            {                
+                var actualizado = _consentimientoService.ActualizarConsentimiento(dbContext, request);
+
+                if (!actualizado)
+                    throw HttpError.NotFound($"No se pudo actualizar el consentimiento {request.ConsentimientoId}");
+
+                return new ApiResponse<bool>
+                {
+                    Success = actualizado,
+                    Mensaje = "Consentimiento actualizado con firma exitosamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                // 4. Log de intentos fallidos
+                _logger.LogWarning($"Intento fallido - IP: {clientIp}, Error: {ex.Message}");
+                throw;
+            }
+        }
+    }    
 }

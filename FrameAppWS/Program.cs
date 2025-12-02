@@ -1,4 +1,5 @@
 using AdministradorCore.BaseHost;
+using FrameAppWS.Middleware;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Notificaciones.Implementacion.Workers;
 using Serilog;
 using Serilog.Core;
@@ -17,18 +19,19 @@ using ServiceStack.Redis;
 using solg.lib.settings;
 using System;
 using System.Reflection;
-using Tyc.Implementacion.Empresas;
-using Tyc.Implementacion.Empresas.Repositories;
 using Tyc.Implementacion.Consentimientos;
 using Tyc.Implementacion.Consentimientos.Mappings;
 using Tyc.Implementacion.Consentimientos.Repositories;
+using Tyc.Implementacion.Email;
+using Tyc.Implementacion.Empresas;
+using Tyc.Implementacion.Empresas.Repositories;
 using Tyc.Implementacion.Firmas.Repositories;
 using Tyc.Implementacion.Textos;
 using Tyc.Implementacion.Textos.Repositories;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Services;
-using FrameAppWS.Middleware;
+using Tyc.Modelo.Configuracion;
 
 namespace FrameAppWS;
 public class Program
@@ -59,15 +62,27 @@ public class Program
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
 
+            builder.Services.Configure<EmailConfiguration>(
+            builder.Configuration.GetSection("Email"));
+
+            builder.Services.AddSingleton<ITemplateRenderer, SimpleTemplateRenderer>();
+            builder.Services.AddScoped<IEmailService, AwsSesEmailService>();
+
             builder.Services.AddScoped<IConsentimientoRepository, ConsentimientoRepository>();
             builder.Services.AddScoped<ITextoRepository, TextoRepository>();
             builder.Services.AddScoped<IEmpresaRepository, EmpresaRepository>();
             builder.Services.AddScoped<IFirmaRepository, FirmaRepository>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
-
+ 
             builder.Services.AddScoped<ITextoService, TextosBL>();
             builder.Services.AddScoped<IEmpresaService, EmpresasBL>();
+
+            builder.Services.AddLogging(logging =>
+            {
+                logging.AddConsole();
+                logging.AddDebug();
+            });
 
             builder.Services.AddMemoryCache();
 

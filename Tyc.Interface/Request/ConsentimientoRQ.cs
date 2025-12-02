@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Tyc.Interface.Response;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Interface.Request
 {
@@ -18,6 +19,7 @@ namespace Tyc.Interface.Request
         public string? Apellidos { get; set; }
         public string? Email { get; set; }
         public string? Telefono { get; set; }
+        public int? TipoIdentificacion { get; set; }
         public string? Identificacion { get; set; }
         public string? Medio { get; set; }
     }
@@ -33,18 +35,17 @@ namespace Tyc.Interface.Request
         public string Dispositivo { get; set; }
     }
 
-    [Route("/consentimientos/consentimiento", "GET")]
-    public class ObtenerFormularioConsentimiento : IReturn<ApiResponse<FormularioConsentimientoRS>>
+    [Route("/consentimientos", "GET")]
+    public class ListarConsentimientosRQ : IReturn<ApiResponse<List<ConsentimientoListItemRS>>>
     {
-        public string Subdominio { get; set; }
-        public string Id { get; set; }
+        /// <summary>
+        /// Fecha de creación del consentimiento (filtro exacto por día)
+        /// </summary>
+        public DateTime? Fecha { get; set; }
+
+        /// <summary>
+        /// Estado: "F" = Firmado (tiene fecha aceptación), "P" = Pendiente (sin fecha aceptación)
+        /// </summary>
+        public string? Estado { get; set; }
     }
-
-    public class PoliticaAceptadaItem
-    {
-        public int Id { get; set; }
-        public string TipoTexto { get; set; }
-    }
-
-
 }

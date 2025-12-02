@@ -11,6 +11,7 @@ namespace Tyc.Interface.Response
         public string? Apellidos { get; set; }
         public string? Email { get; set; }
         public string? Telefono { get; set; }
+        public string TipoIdentificacion { get; set; }
         public string? Identificacion { get; set; }
         public DateTime? FechaAceptacion { get; set; }
         public string? Link { get; set; }

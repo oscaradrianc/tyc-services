@@ -7,8 +7,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SimpleEmail" />
-    <PackageReference Include="AWSSDK.SimpleEmailV2" />
     <PackageReference Include="Mapster" />
     <PackageReference Include="administradorcore.implementacion" />
     <PackageReference Include="administradorcore.cifrar" />
@@ -20,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Email\Templates\" />
     <Folder Include="Parametrizacion\Mappings\" />
     <Folder Include="Parametrizacion\Repositories\" />
   </ItemGroup>

@@ -20,6 +20,7 @@ namespace Tyc.Modelo
         public Table<Texto> Textos { get; set; }
         public Table<Empresa> Empresas { get; set; }
         public Table<Firma> Firmas { get; set; }
+        public Table<TipoIdentificacion> TiposIdentificacion { get; set; }
 
     }
 

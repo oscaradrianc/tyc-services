@@ -2,6 +2,7 @@
 using MapsterMapper;
 using ServiceStack;
 using ServiceStack.Host;
+using System.Collections.Generic;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response;
@@ -85,6 +86,26 @@ public class TycWS : Service
             {
                 Success = actualizado,
                 Mensaje = "Consentimiento actualizado con firma exitosamente"
+            };
+        }
+    }
+
+    public ApiResponse<List<ConsentimientoListItemRS>> Get(ListarConsentimientosRQ request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var resultado = _consentimientoService.ListarConsentimientos(
+                dbSigo,
+                request.Fecha,
+                request.Estado
+            );
+
+            return new ApiResponse<List<ConsentimientoListItemRS>>
+            {
+                Data = resultado,
+                Mensaje = $"Se encontraron {resultado.Count} consentimientos",
+                Success = true
             };
         }
     }

@@ -4,8 +4,4 @@
     <PackageReference Include="administradorcore.modelo" />    
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Tipos\" />
-  </ItemGroup>
-
 </Project>

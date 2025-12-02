@@ -73,5 +73,8 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "cons_medio")]
         public string? ConsMedio { get; set; }
+
+        [Column(Name = "clas_tipoidentificacion1")]
+        public int? ClasTipoIdentificacion1 { get; set; }
     }
 }
