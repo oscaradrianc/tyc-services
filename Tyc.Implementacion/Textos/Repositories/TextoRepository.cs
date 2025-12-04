@@ -41,6 +41,23 @@ public class TextoRepository : ITextoRepository
                 && x.TextEstado == EstadoTexto.Activo);
     }
 
+    /// <summary>
+    /// Obtiene textos por empresa y lista de tipos.
+    /// Ejemplo: GetByEmpresaYTipos(context, 90, new List<string> { "CORREO_SALUDO", "CORREO_TEXTOALTERNO" })
+    /// </summary>
+    public List<Texto> GetByEmpresaYTipos(TycBaseContext context, int EmpresaId, List<string> tiposTexto, bool soloActivos = true)
+    {
+        if (tiposTexto == null || !tiposTexto.Any())
+            return new List<Texto>();
+
+        var query = context.GetTable<Texto>()
+            .Where(x => x.EmpresaId == EmpresaId && tiposTexto.Contains(x.TextTipoTexto));
+
+        if (soloActivos)
+            query = query.Where(x => x.TextEstado == EstadoTexto.Activo);
+
+        return query.OrderBy(x => x.TextTipoTexto).ToList();
+    }
     public Texto Create(TycBaseContext context, Texto entity)
     {
         context.GetTable<Texto>().InsertOnSubmit(entity);

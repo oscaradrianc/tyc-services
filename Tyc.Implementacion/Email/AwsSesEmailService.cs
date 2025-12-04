@@ -15,7 +15,6 @@ namespace Tyc.Implementacion.Email;
 public class AwsSesEmailService : IEmailService
 {
     private readonly EmailConfiguration _config;
-    private readonly ITemplateRenderer _templateRenderer;
     private readonly ILogger<AwsSesEmailService> _logger;
 
     private const string TEMPLATE_CONSENTIMIENTO = "consentimiento-creado";
@@ -23,41 +22,13 @@ public class AwsSesEmailService : IEmailService
 
     public AwsSesEmailService(
         IOptions<EmailConfiguration> config,
-        ITemplateRenderer templateRenderer,
         ILogger<AwsSesEmailService> logger)
     {
-        _config = config.Value;
-        _templateRenderer = templateRenderer;
+        _config = config.Value;        
         _logger = logger;
     }
 
-    public async Task<bool> EnviarEmailConsentimientoAsync(EnviarEmailConsentimientoRQ request)
-    {
-        try
-        {
-            var valores = new Dictionary<string, string>
-            {
-                { "UserName", request.NombreUsuario },
-                { "NameAgencia", request.NombreAgencia },
-                { "NumeroContacto", request.NumeroContacto },
-                { "LinkFormulario", request.LinkFormulario }
-            };
-
-            var htmlBody = _templateRenderer.RenderTemplate(TEMPLATE_CONSENTIMIENTO, valores);
-
-            return await EnviarEmailAsync(
-                request.EmailDestinatario,
-                SUBJECT_CONSENTIMIENTO,
-                htmlBody);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al enviar email de consentimiento a {Email}", request.EmailDestinatario);
-            return false;
-        }
-    }
-
-    private async Task<bool> EnviarEmailAsync(string destinatario, string asunto, string htmlBody)
+    public async Task<bool> EnviarEmailAsync(string destinatario, string asunto, string htmlBody)
     {
         try
         {

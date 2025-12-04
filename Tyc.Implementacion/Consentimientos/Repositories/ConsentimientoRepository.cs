@@ -31,6 +31,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
     public bool ActualizarAceptaciones(
     TycBaseContext context,
     int consentimientoId,
+    string medio,
     List<string> opcionesContactabilidad,
     Dictionary<string, int> politicasAceptadas,
     DateTime fechaAceptacion)
@@ -43,6 +44,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
 
         // Actualizar fecha de aceptación
         entity.ConsFechaAceptacionConsentimiento = fechaAceptacion;
+        entity.ConsMedio = medio;
 
         // Procesar opciones de contactabilidad
         entity.ConsContactabilidadEmail = opcionesContactabilidad?.Contains("Email") == true ? OpcionSiNo.Si : OpcionSiNo.No;
@@ -103,11 +105,8 @@ public class ConsentimientoRepository : IConsentimientoRepository
     public TipoIdentificacion GetTipoIdentificacion(TycBaseContext context, int empresaId, int tipoDocumentoId)
     {
         return context.GetTable<TipoIdentificacion>()
-            .FirstOrDefault(x => x.EmpresaId == empresaId && x.TipoIdentificacionId == tipoDocumentoId);            
-        
-    }
-
-    
+            .FirstOrDefault(x => x.EmpresaId == empresaId && x.TipoIdentificacionId == tipoDocumentoId);  
+    }    
 
     public List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado)
     {

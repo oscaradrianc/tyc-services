@@ -63,10 +63,21 @@ public class Program
                 .WithScopedLifetime());
 
             builder.Services.Configure<EmailConfiguration>(
-            builder.Configuration.GetSection("Email"));
+            builder.Configuration.GetSection("Email")
+            );
 
             builder.Services.AddSingleton<ITemplateRenderer, SimpleTemplateRenderer>();
-            builder.Services.AddScoped<IEmailService, AwsSesEmailService>();
+
+            var emailProvider = builder.Configuration["Email:Provider"]; // "SMTP" o "SDK"
+
+            if (emailProvider == "SMTP")
+            {
+                builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+            }                
+            else
+            {
+                builder.Services.AddScoped<IEmailService, AwsSesEmailService>();
+            }                
 
             builder.Services.AddScoped<IConsentimientoRepository, ConsentimientoRepository>();
             builder.Services.AddScoped<ITextoRepository, TextoRepository>();

@@ -1,8 +1,10 @@
 ﻿using MapsterMapper;
+using Microsoft.Extensions.Logging;
 using ServiceStack;
 using ServiceStack.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Response;
@@ -17,20 +19,23 @@ public class TextosBL : ITextoService
 
     private readonly ITextoRepository _repository;
     private readonly IMapper _mapper;
+    private readonly ILogger<TextosBL> _logger;
 
     public TextosBL(
         ITextoRepository textoRepository,
-        IMapper mapper)
+        IMapper mapper,
+        ILogger<TextosBL> logger)
     {
         _repository = textoRepository;
         _mapper = mapper;
+        _logger = logger;
     }
 
-    /*public TextoResponse ObtenerTextoPorId(TycBaseContext context, int id)
+    public TextoResponse ObtenerTextoPorId(TycBaseContext context, int id)
     {
         var entity = _repository.GetById(context, id);
         return entity != null ? _mapper.Map<TextoResponse>(entity) : null;
-    }*/
+    }
 
     public List<TextoResponse> ObtenerTextosPorEmpresa(TycBaseContext context, int EmpresaId, bool soloActivos = true)
     {
@@ -38,11 +43,45 @@ public class TextosBL : ITextoService
         return _mapper.Map<List<TextoResponse>>(entities);
     }
 
-    /*public TextoResponse ObtenerTextoPorEmpresaYTipo(TycBaseContext context, int EmpresaId, string tipoTexto)
+    public TextoResponse ObtenerTextoPorEmpresaYTipo(TycBaseContext context, int EmpresaId, string tipoTexto)
     {
         var entity = _repository.GetByEmpresaYTipo(context, EmpresaId, tipoTexto);
         return entity != null ? _mapper.Map<TextoResponse>(entity) : null;
-    }*/
+    }
+
+    /// <summary>
+    /// Obtiene textos por empresa y lista de tipos.
+    /// </summary>
+    public List<TextoResponse> ObtenerTextosPorEmpresaYTipos(
+        TycBaseContext context,
+        int EmpresaId,
+        List<string> tiposTexto,
+        bool soloActivos = true)
+    {
+        if (tiposTexto == null || !tiposTexto.Any())
+            return new List<TextoResponse>();
+
+        var entities = _repository.GetByEmpresaYTipos(context, EmpresaId, tiposTexto, soloActivos);
+        return _mapper.Map<List<TextoResponse>>(entities);
+    }
+
+    /// <summary>
+    /// Obtiene textos por empresa y lista de tipos como diccionario.
+    /// Útil para acceso rápido: textos["CORREO_SALUDO"]
+    /// </summary>
+    public Dictionary<string, TextoResponse> ObtenerTextosPorEmpresaYTiposComoDiccionario(
+        TycBaseContext context,
+        int EmpresaId,
+        List<string> tiposTexto,
+        bool soloActivos = true)
+    {
+        var textos = ObtenerTextosPorEmpresaYTipos(context, EmpresaId, tiposTexto, soloActivos);
+
+        return textos.ToDictionary(
+            t => t.TipoTexto,
+            t => t,
+            StringComparer.OrdinalIgnoreCase);
+    }
 
     /*public int CrearTexto(TycBaseContext context, Texto entity, int usuarioId)
     {
@@ -98,9 +137,18 @@ public class TextosBL : ITextoService
         return _repository.CambiarEstado(context, id, estado);
     }*/
 
+    /// <summary>
+    /// Reemplaza placeholders {{Variable}} en el texto con los valores del diccionario.
+    /// </summary>
+    /// <param name="plantilla">Texto con placeholders. Ej: "Hola {{NombreCliente}}"</param>
+    /// <param name="variables">Diccionario de variables. Ej: { "NombreCliente": "Juan" }</param>
+    /// <returns>Texto con placeholders reemplazados</returns>
     public string ProcesarPlantillaTexto(string plantilla, Dictionary<string, string> variables)
     {
         if (string.IsNullOrEmpty(plantilla))
+            return plantilla;
+
+        if (variables == null || !variables.Any())
             return plantilla;
 
         string resultado = plantilla;
@@ -111,17 +159,15 @@ public class TextosBL : ITextoService
             resultado = resultado.Replace(patron, variable.Value ?? string.Empty);
         }
 
+        // Opcional: Loguear si quedaron placeholders sin reemplazar
+        if (resultado.Contains("{{") && resultado.Contains("}}"))
+        {
+            _logger.LogWarning(
+                "Quedaron placeholders sin reemplazar en el texto. Plantilla original: {Plantilla}",
+                plantilla);
+        }
+
         return resultado;
-    }
-
-    public TextoResponse ObtenerTextoPorId(TycBaseContext context, int id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public TextoResponse ObtenerTextoPorEmpresaYTipo(TycBaseContext context, int EmpresaId, string tipoTexto)
-    {
-        throw new NotImplementedException();
     }
 
     public int CrearTexto(TycBaseContext context, Texto entity, int usuarioId)

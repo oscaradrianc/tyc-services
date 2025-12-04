@@ -1,9 +1,8 @@
 using System.Threading.Tasks;
-using Tyc.Interface.Request;
 
 namespace Tyc.Interface.Services;
 
 public interface IEmailService
 {
-    Task<bool> EnviarEmailConsentimientoAsync(EnviarEmailConsentimientoRQ request);
+    Task<bool> EnviarEmailAsync(string destinatario , string subject, string htmlBody);
 }

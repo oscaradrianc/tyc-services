@@ -27,7 +27,7 @@ namespace Tyc.Interface.Request
     [Route("/consentimientos/{ConsentimientoId}/firma", "PUT")]
     public class ActualizarConsentimientoConFirma : IReturn<ApiResponse<bool>>
     {
-        public int ConsentimientoId { get; set; }
+        public int ConsentimientoId { get; set; }       
         public string FirmaImagen { get; set; }
         public List<PoliticaAceptadaItem> PoliticasAceptadas { get; set; }
         public List<string> OpcionesContactabilidad { get; set; }

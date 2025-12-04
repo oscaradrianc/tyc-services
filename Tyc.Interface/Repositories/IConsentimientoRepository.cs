@@ -10,7 +10,7 @@ public interface IConsentimientoRepository
     Consentimiento GetById(TycBaseContext context, int id);
     Consentimiento GetByGuid(TycBaseContext context, Guid guid);
     Consentimiento CrearConsentimiento(TycBaseContext context, Consentimiento datosConsentimiento);
-    bool ActualizarAceptaciones(TycBaseContext context, int consentimientoId,
+    bool ActualizarAceptaciones(TycBaseContext context, int consentimientoId, string medio,
     List<string> opcionesContactabilidad,
     Dictionary<string, int> politicasAceptadas,
     DateTime fechaAceptacion);

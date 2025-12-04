@@ -2,7 +2,9 @@
 using MapsterMapper;
 using ServiceStack;
 using ServiceStack.Host;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Interface.Services;
@@ -83,6 +85,76 @@ public class TextosWS : Service
                     $"No se encontró texto de tipo '{request.TipoTexto}' para la Empresa {request.EmpresaId}");
 
             return result;
+        }
+    }
+
+    /// <summary>
+    /// GET /textos/Empresa/{EmpresaId}/tipos?tipos=CORREO_SALUDO,CORREO_TEXTOALTERNO
+    /// </summary>
+    public ApiResponse<List<TextoResponse>> Get(GetTextosByEmpresaYTipos request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            if (string.IsNullOrWhiteSpace(request.Tipos))
+            {
+                return new ApiResponse<List<TextoResponse>>
+                {
+                    Data = new List<TextoResponse>(),
+                    Mensaje = "No se proporcionaron tipos de texto",
+                    Success = false
+                };
+            }
+
+            // Parsear tipos separados por coma
+            var tiposList = request.Tipos
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .Where(t => !string.IsNullOrEmpty(t))
+                .ToList();
+
+            var result = _textoService.ObtenerTextosPorEmpresaYTipos(
+                dbSigo, request.EmpresaId, tiposList, request.SoloActivos);
+
+            return new ApiResponse<List<TextoResponse>>
+            {
+                Data = result,
+                Mensaje = $"Se encontraron {result.Count} textos",
+                Success = true
+            };
+        }
+    }
+
+    /// <summary>
+    /// POST /textos/Empresa/{EmpresaId}/tipos
+    /// Body: { "Tipos": ["CORREO_SALUDO", "CORREO_TEXTOALTERNO"], "SoloActivos": true }
+    /// </summary>
+    public ApiResponse<List<TextoResponse>> Post(GetTextosByEmpresaYTiposPost request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            if (request.Tipos == null || !request.Tipos.Any())
+            {
+                return new ApiResponse<List<TextoResponse>>
+                {
+                    Data = new List<TextoResponse>(),
+                    Mensaje = "No se proporcionaron tipos de texto",
+                    Success = false
+                };
+            }
+
+            var result = _textoService.ObtenerTextosPorEmpresaYTipos(
+                dbSigo, request.EmpresaId, request.Tipos, request.SoloActivos);
+
+            return new ApiResponse<List<TextoResponse>>
+            {
+                Data = result,
+                Mensaje = $"Se encontraron {result.Count} textos",
+                Success = true
+            };
         }
     }
 

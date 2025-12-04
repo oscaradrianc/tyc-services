@@ -30,6 +30,40 @@ public class GetTextoByEmpresaYTipo : IReturn<TextoResponse>
     public string TipoTexto { get; set; }
 }
 
+/// <summary>
+/// Obtiene textos por empresa y lista de tipos.
+/// Ejemplo: GET /textos/Empresa/90/tipos?tipos=CORREO_SALUDO,CORREO_TEXTOALTERNO
+/// </summary>
+[Route("/textos/Empresa/{EmpresaId}/tipos", "GET")]
+public class GetTextosByEmpresaYTipos : IReturn<ApiResponse<List<TextoResponse>>>
+{
+    public int EmpresaId { get; set; }
+
+    /// <summary>
+    /// Lista de tipos separados por coma. 
+    /// Ejemplo: "CORREO_SALUDO,CORREO_TEXTOALTERNO"
+    /// </summary>
+    public string Tipos { get; set; }
+
+    public bool SoloActivos { get; set; } = true;
+}
+
+/// <summary>
+/// Alternativa: Obtiene textos por empresa y lista de tipos (POST para listas largas).
+/// </summary>
+[Route("/textos/Empresa/{EmpresaId}/tipos", "POST")]
+public class GetTextosByEmpresaYTiposPost : IReturn<ApiResponse<List<TextoResponse>>>
+{
+    public int EmpresaId { get; set; }
+
+    /// <summary>
+    /// Lista de tipos como array.
+    /// </summary>
+    public List<string> Tipos { get; set; }
+
+    public bool SoloActivos { get; set; } = true;
+}
+
 [Route("/textos", "POST")]
 public class CreateTexto : IReturn<TextoResponse>
 {

@@ -1,9 +1,11 @@
 ﻿using AdministradorCore.Cifrar;
 using MapsterMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Notificaciones.Implementacion.Servicios;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
@@ -24,6 +26,9 @@ public class ConsentimientosBL : IConsentimientoService
     private readonly IEmpresaRepository _empresaRepository;
     private readonly IEmailService _emailService;
     private readonly ILogger<ConsentimientosBL> _logger;
+    private readonly ITextoService _textoService;
+    private readonly ITemplateRenderer _templateRenderer;
+    private readonly IConfiguration _configuration;
 
     public ConsentimientosBL(
         IConsentimientoRepository consentimientoRepository,
@@ -32,7 +37,10 @@ public class ConsentimientosBL : IConsentimientoService
         IEmpresaRepository empresaRepository,
         IEmailService emailService,
         ILogger<ConsentimientosBL> logger,
-        IMapper mapper)
+        IMapper mapper,
+        ITextoService textoService,
+        ITemplateRenderer templateRenderer,
+        IConfiguration configuration)
     {
         _repository = consentimientoRepository;
         _firmaRepository = firmaRepository;
@@ -40,6 +48,9 @@ public class ConsentimientosBL : IConsentimientoService
         _empresaRepository = empresaRepository;
         _emailService = emailService;
         _logger = logger;
+        _textoService = textoService;
+        _templateRenderer = templateRenderer;
+        _configuration = configuration;
     }
 
     public ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext dbSigo, int id)
@@ -68,72 +79,152 @@ public class ConsentimientosBL : IConsentimientoService
         return response;
     }
 
-    public async Task<int> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity)
+    public int CrearConsentimiento(TycBaseContext context, Consentimiento entity)
     {
+        //Guardar datos ANTES de cifrar (para el email)
         string emailDestinatario = entity.ConsEmail;
-        string nombreCompleto = $"{entity.ConsNombre} {entity.ConsApellido}".Trim();
+        string nombreCompleto = $"{entity.ConsNombre} {entity.ConsApellido}".Trim(); 
+        string nombreCliente = entity.ConsNombre;
+        string apellidoCliente = entity.ConsApellido;
+        string movilCliente = entity.ConsMovil;
+        string identificacionCliente = entity.ConsIdentificacion;
+        string asunto = _configuration.GetValue<string>("Email:SubjectCreate") ?? "Aceptación Terminos y Condiciones";
 
+        //Obtener datos de la empresa ANTES del Task.Run (mientras el context está activo)
+        var empresa = _empresaRepository.GetById(context, entity.EmpresaId);
+        if (empresa == null)
+        {
+            _logger.LogWarning("No se encontró empresa {EmpresaId}", entity.EmpresaId);
+        }
+
+        var tipoIdent = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.ClasTipoIdentificacion1);
+
+        var tiposRequeridos = new List<string> { ConstantesTyc.tipoTextoSaludoCorreo, ConstantesTyc.tipoTextoTextoAlternoCorreo };
+        var textos = _textoService.ObtenerTextosPorEmpresaYTiposComoDiccionario(
+            context,
+            entity.EmpresaId,
+            tiposRequeridos);
+
+        var variables = new Dictionary<string, string>
+        {
+            // Datos del cliente
+            { "NombreCliente", nombreCliente },
+            { "ApellidoCliente", apellidoCliente },
+            { "NombreCompletoCliente", $"{nombreCliente} {apellidoCliente}".Trim() },
+            { "EmailCliente", emailDestinatario },
+            { "MovilCliente", movilCliente },
+            { "IdentificacionCliente", identificacionCliente },
+            { "TipoIdentificacionCliente", tipoIdent?.Descripcion ?? "" },
+            { "FechaCreacion", DateTime.Now.ToString("dd/MM/yyyy HH:mm") },
+        
+            // Datos de la empresa
+            { "NombreEmpresa", empresa?.Nombre ?? "" },
+            { "NumeroContacto", empresa?.Telefono ?? "" },
+            { "EmailEmpresa", empresa?.MailContactos ?? "" },
+            { "DireccionEmpresa", empresa?.Direccion ?? "" }
+        };
+
+        string textoSaludoPersonalizado = null;
+
+        if (textos.TryGetValue(ConstantesTyc.tipoTextoSaludoCorreo, out var textoSaludo))
+        {
+            // Texto desde BD: "Hola {{NombreCompletoCliente}}, desde {{NombreEmpresa}}..."
+            textoSaludoPersonalizado = _textoService.ProcesarPlantillaTexto(
+                textoSaludo.TextoTerminos,
+                variables);           
+        }
+
+        string textoAlternoPersonalizado = null;
+
+        if (textos.TryGetValue(ConstantesTyc.tipoTextoTextoAlternoCorreo, out var textoAlterno))
+        {
+            // Texto desde BD: "Hola {{NombreCompletoCliente}}, desde {{NombreEmpresa}}..."
+            textoAlternoPersonalizado = _textoService.ProcesarPlantillaTexto(
+                textoAlterno.TextoTerminos,
+                variables);           
+        }
+
+
+        //Cifrar y crear el consentimiento
         CifrarDatosSensibles(entity);
         entity.ConsGuid = Guid.NewGuid();
 
         var created = _repository.CrearConsentimiento(context, entity);
         int consentimientoId = created.ConsConsecuencia;
 
-        _ = Task.Run(async () =>
+        // 4. Generar link del formulario (no necesita el context)
+        string guidConcatenado = entity.ConsGuid.ToString() + entity.ConsGuid.ToString();
+        string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
+            .Encrypt256(guidConcatenado, true);
+
+        string linkFormulario = $"{empresa?.Subdominio}?id={Uri.EscapeDataString(guidEncriptado)}";
+
+        //Enviar email en background (sin usar el context)
+        if (empresa != null && !string.IsNullOrWhiteSpace(emailDestinatario))
         {
-            try
+            // Capturar los valores en variables locales para el closure
+           /* var emailRequest = new EnviarEmailConsentimientoRQ
             {
-                // Obtener datos de la empresa para el email
-                var empresa = _empresaRepository.GetById(context, entity.EmpresaId);
-                if (empresa == null)
-                {
-                    _logger.LogWarning("No se pudo obtener empresa {EmpresaId} para enviar email", entity.EmpresaId);
-                    return;
-                }
+                EmailDestinatario = emailDestinatario,
+                NombreCliente = nombreCompleto,
+                NombreEmpresa = empresa.Nombre,
+                NumeroContacto = empresa.Telefono ?? "N/A",
+                LinkFormulario = linkFormulario,
+                TextoAlternativo = textoAlternoPersonalizado ?? "",
+                TextoSaludo = textoSaludoPersonalizado ?? ""
+            };*/
 
-                // Generar link del formulario
-                string guidConcatenado = entity.ConsGuid.ToString() + entity.ConsGuid.ToString();
-                string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
-                    .Encrypt256(guidConcatenado, true);
-
-                string subdominio = ExtraerSubdominio(empresa.Subdominio);
-                string linkFormulario = $"{empresa.Subdominio}/consentimiento?id={Uri.EscapeDataString(guidEncriptado)}";
-
-                // Preparar request de email
-                var emailRequest = new EnviarEmailConsentimientoRQ
-                {
-                    EmailDestinatario = emailDestinatario,
-                    NombreUsuario = nombreCompleto,
-                    NombreAgencia = empresa.Nombre,
-                    NumeroContacto = empresa.Telefono ?? "N/A",
-                    LinkFormulario = linkFormulario
-                };
-
-                // Enviar email
-                bool enviado = await _emailService.EnviarEmailConsentimientoAsync(emailRequest);
-
-                if (enviado)
-                {
-                    _logger.LogInformation("Email de consentimiento enviado exitosamente para consentimiento {ConsentimientoId}", consentimientoId);
-                }
-                else
-                {
-                    _logger.LogWarning("No se pudo enviar email de consentimiento para {ConsentimientoId}", consentimientoId);
-                }
-            }
-            catch (Exception ex)
+            // Los textos ya vienen procesados desde ConsentimientosBL
+            // Solo los pasamos al template
+            var valores = new Dictionary<string, string>
             {
-                _logger.LogError(ex, "Error al enviar email de consentimiento {ConsentimientoId}", consentimientoId);
-                // No propagamos la excepción - el email no debe afectar la creación del consentimiento
-            }
-        });
+                { "TextoSaludo", textoSaludoPersonalizado },
+                { "TextoAlternativo", textoAlternoPersonalizado },
+                { "LogoEmpresa", empresa.LogoBase64 },
+                { "NombreCliente", nombreCompleto },
+                { "NombreEmpresa", empresa.Nombre },
+                { "NumeroContacto", empresa.Telefono },
+                { "LinkFormulario", linkFormulario ?? string.Empty }
+            };
 
-        return created.ConsConsecuencia;
-    }
+            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO, valores);
 
-    public int CrearConsentimiento(TycBaseContext context, Consentimiento entity)
-    {
-        return CrearConsentimientoAsync(context, entity).GetAwaiter().GetResult();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    bool enviado = await _emailService.EnviarEmailAsync(emailDestinatario, asunto,
+                        htmlBody);
+
+                    if (enviado)
+                    {
+                        _logger.LogInformation(
+                            "Email de consentimiento enviado exitosamente para consentimiento {ConsentimientoId}",
+                            consentimientoId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "No se pudo enviar email de consentimiento para {ConsentimientoId}",
+                            consentimientoId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Error al enviar email de consentimiento {ConsentimientoId}",
+                        consentimientoId);
+                }
+            });
+        }
+        else
+        {
+            _logger.LogWarning(
+                "No se envió email para consentimiento {ConsentimientoId}: Empresa nula o email vacío",
+                consentimientoId);
+        }
+
+        return consentimientoId;
     }
 
     public bool ActualizarConsentimientoConFirma(TycBaseContext context, ActualizarConsentimientoConFirma request)
@@ -188,6 +279,7 @@ public class ConsentimientosBL : IConsentimientoService
         bool actualizado = _repository.ActualizarAceptaciones(
             context,
             request.ConsentimientoId,
+            request.Dispositivo,
             request.OpcionesContactabilidad,
             politicasDict,
             request.FechaFirma
@@ -365,7 +457,8 @@ public class ConsentimientosBL : IConsentimientoService
             SolicitaApellido = empresa.SolicitaApellido,
             SolicitaEmail = empresa.SolicitaEmail,
             SolicitaTelefono = empresa.SolicitaTelefono,
-            SolicitaIdentificacion = empresa.SolicitaIdentificacion
+            SolicitaIdentificacion = empresa.SolicitaIdentificacion,
+            LogoEmpresa = empresa.LogoBase64
         };
     }
 
@@ -421,6 +514,7 @@ public class ConsentimientosBL : IConsentimientoService
         return _repository.ActualizarAceptaciones(
             context,
             request.ConsentimientoId,
+            request.Dispositivo,
             request.OpcionesContactabilidad,
             politicasDict,
             request.FechaFirma
