@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Tyc.Interface.Repositories;
+using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
+using Ganss.Xss;
 
 namespace Tyc.Implementacion.Textos;
 
@@ -20,6 +22,7 @@ public class TextosBL : ITextoService
     private readonly ITextoRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<TextosBL> _logger;
+    private readonly HtmlSanitizer _htmlSanitizer;
 
     public TextosBL(
         ITextoRepository textoRepository,
@@ -29,6 +32,7 @@ public class TextosBL : ITextoService
         _repository = textoRepository;
         _mapper = mapper;
         _logger = logger;
+        _htmlSanitizer = ConfigurarSanitizer();
     }
 
     public TextoResponse ObtenerTextoPorId(TycBaseContext context, int id)
@@ -205,4 +209,104 @@ public class TextosBL : ITextoService
                 $"Tipo de texto inválido. Valores permitidos: {string.Join(", ", tiposValidos)}");
         }
     }*/
+
+    private static HtmlSanitizer ConfigurarSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        // Tags permitidos (DevExtreme dx-html-editor genera estos)
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedTags.Add("p");
+        sanitizer.AllowedTags.Add("br");
+        sanitizer.AllowedTags.Add("strong");
+        sanitizer.AllowedTags.Add("b");
+        sanitizer.AllowedTags.Add("em");
+        sanitizer.AllowedTags.Add("i");
+        sanitizer.AllowedTags.Add("u");
+        sanitizer.AllowedTags.Add("ul");
+        sanitizer.AllowedTags.Add("ol");
+        sanitizer.AllowedTags.Add("li");
+        sanitizer.AllowedTags.Add("span");
+        sanitizer.AllowedTags.Add("div");
+        sanitizer.AllowedTags.Add("a");
+        sanitizer.AllowedTags.Add("h1");
+        sanitizer.AllowedTags.Add("h2");
+        sanitizer.AllowedTags.Add("h3");
+
+        // Atributos permitidos
+        sanitizer.AllowedAttributes.Clear();
+        sanitizer.AllowedAttributes.Add("style");
+        sanitizer.AllowedAttributes.Add("class");
+        sanitizer.AllowedAttributes.Add("href");
+        sanitizer.AllowedAttributes.Add("target");
+
+        // Estilos CSS permitidos (inline styles)
+        sanitizer.AllowedCssProperties.Clear();
+        sanitizer.AllowedCssProperties.Add("margin");
+        sanitizer.AllowedCssProperties.Add("padding");
+        sanitizer.AllowedCssProperties.Add("padding-left");
+        sanitizer.AllowedCssProperties.Add("font-size");
+        sanitizer.AllowedCssProperties.Add("font-weight");
+        sanitizer.AllowedCssProperties.Add("line-height");
+        sanitizer.AllowedCssProperties.Add("color");
+        sanitizer.AllowedCssProperties.Add("text-align");
+
+        // Bloquear javascript: en href
+        sanitizer.AllowedSchemes.Clear();
+        sanitizer.AllowedSchemes.Add("https");
+        sanitizer.AllowedSchemes.Add("http");
+        sanitizer.AllowedSchemes.Add("mailto");
+
+        return sanitizer;
+    }
+
+    public bool GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId)
+    {
+        bool result = false;
+
+        if (items == null || !items.Any())
+            return result;
+
+        foreach (var item in items)
+        {
+            // Sanitizar HTML
+            var textoLimpio = _htmlSanitizer.Sanitize(item.TextoTerminos ?? string.Empty);
+
+            if (item.Id.HasValue && item.Id.Value > 0 && _repository.Exists(context, item.Id.Value))
+            {
+                // Actualizar
+                var entity = new Texto
+                {
+                    TextText = item.Id.Value,
+                    TextTipoTexto = item.TipoTexto,
+                    TextTextoDelosTerminos = textoLimpio,
+                    TextEstado = item.Estado ?? EstadoTexto.Activo,
+                    UsuaUsuario = usuarioId
+                };
+
+                _repository.Update(context, entity);
+                result.Actualizados++;
+                result.IdsAfectados.Add(item.Id.Value);
+            }
+            else
+            {
+                // Insertar
+                var entity = new Texto
+                {
+                    EmpresaId = item.EmpresaId,
+                    TextTipoTexto = item.TipoTexto,
+                    TextTextoDelosTerminos = textoLimpio,
+                    TextEstado = item.Estado ?? EstadoTexto.Activo,
+                    TextFechaCreacion = DateTime.UtcNow,
+                    UsuaUsuario = usuarioId
+                };
+
+                var created = _repository.Create(context, entity);
+                result.Insertados++;
+                result.IdsAfectados.Add(created.TextText);
+            }
+        }
+
+        return result;
+    }
 }

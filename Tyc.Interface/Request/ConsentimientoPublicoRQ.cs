@@ -13,7 +13,8 @@ namespace Tyc.Interface.Request
         {
             public string Subdominio { get; set; }
             public string Id { get; set; }
-            public int ConsentimientoId { get; set; }           
+            public int ConsentimientoId { get; set; }       
+            public string Estado { get; set; }
             public List<PoliticaAceptadaItem> PoliticasAceptadas { get; set; }
             public List<string> OpcionesContactabilidad { get; set; }
             public DateTime FechaFirma { get; set; }

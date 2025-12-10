@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -38,4 +39,5 @@ public interface ITextoService
     /// <param name="variables">Diccionario de variables. Ej: { "NombreCliente": "Juan" }</param>
     /// <returns>Texto con placeholders reemplazados</returns>
     string ProcesarPlantillaTexto(string plantilla, Dictionary<string, string> variables);
+    bool GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId);
 }

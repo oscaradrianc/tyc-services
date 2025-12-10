@@ -9,7 +9,7 @@ namespace Tyc.Interface.Request
     [Route("/consentimientos/{Id}", "GET")]
     public class GetConsentimiento : IReturn<ConfirmacionConsentimientoRS>
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
     }
 
     [Route("/consentimientos", "POST")]
@@ -28,6 +28,7 @@ namespace Tyc.Interface.Request
     public class ActualizarConsentimientoConFirma : IReturn<ApiResponse<bool>>
     {
         public int ConsentimientoId { get; set; }       
+        public string Estado { get; set; }
         public string FirmaImagen { get; set; }
         public List<PoliticaAceptadaItem> PoliticasAceptadas { get; set; }
         public List<string> OpcionesContactabilidad { get; set; }

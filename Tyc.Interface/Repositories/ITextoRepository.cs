@@ -14,9 +14,11 @@ public interface ITextoRepository
 
     Texto Create(TycBaseContext context, Texto entity);
     Texto Update(TycBaseContext context, Texto entity);
+
+    bool Exists(TycBaseContext context, int id);
     /*bool Delete(TycBaseContext context, int id);
     bool CambiarEstado(TycBaseContext context, int id, string estado);
-    bool Exists(TycBaseContext context, int id);
+    
     bool ExisteTextoParaEmpresaYTipo(TycBaseContext context, int EmpresaId, string tipoTexto, int? excludeId = null);*/
 
 }

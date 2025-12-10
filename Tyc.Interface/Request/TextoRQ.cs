@@ -93,3 +93,18 @@ public class CambiarEstadoTexto : IReturn<ApiResponse<object>>
     public int Id { get; set; }
     public string Estado { get; set; }
 }
+
+[Route("/textos/lista", "PUT")]
+public class GuardarListaTextos : IReturn<ApiResponse<ApiResponse<object>>>
+{
+    public List<TextoItem> Items { get; set; }
+}
+
+public class TextoItem
+{
+    public int? Id { get; set; }  // Nullable para nuevos registros
+    public int EmpresaId { get; set; }
+    public string TipoTexto { get; set; }
+    public string TextoTerminos { get; set; }
+    public string Estado { get; set; }
+}

@@ -10,7 +10,7 @@ namespace Tyc.Interface.Services;
 
 public interface IConsentimientoService
 {
-    ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext context, int id);
+    ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext context, Guid id);
     int CrearConsentimiento(TycBaseContext context, Consentimiento entity);
 
     bool ActualizarConsentimientoConFirma(TycBaseContext context, ActualizarConsentimientoConFirma request);

@@ -53,26 +53,35 @@ public class ConsentimientosBL : IConsentimientoService
         _configuration = configuration;
     }
 
-    public ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext dbSigo, int id)
+    public ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext dbSigo, Guid id)
     {
-        var entity = _repository.GetById(dbSigo, id);
+        var entity = _repository.GetByGuid(dbSigo, id);
         if (entity == null)
             return null;
 
-        var tipoDoc = _repository.GetTipoIdentificacion(dbSigo, entity.EmpresaId, (int)entity.ClasTipoIdentificacion1);
+        var tipoDoc = _repository.GetTipoIdentificacion(dbSigo, entity.EmpresaId, (int)entity.TipoIdentificacion1);
 
-        string guidConcatenado = entity.ConsGuid.ToString() + entity.ConsGuid.ToString();
+        string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
         string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
                 .Encrypt256(guidConcatenado, true);
 
         var response = new ConfirmacionConsentimientoRS
         {
-            Id = entity.ConsConsecuencia,
-            Guid = entity.ConsGuid,
+            Id = entity.Id,
+            Guid = entity.GuId,
             IdEmpresa = entity.EmpresaId,
-            FechaAceptacion = entity.ConsFechaAceptacionConsentimiento,
+            FechaAceptacion = entity.FechaAceptacion,
+            FechaCreacion = entity.FechaCreacion,
+            Estado = entity.Estado,
             Link = Uri.EscapeDataString(guidEncriptado),
-            TipoIdentificacion = tipoDoc?.Descripcion
+            TipoIdentificacion = tipoDoc?.Descripcion,
+            AceptoTerminos = entity.AceptoTYC,
+            AceptoCompartirInformacion = entity.AceptoCompartirInfo,
+            AceptoRecibirOfertas = entity.AceptoRecibirOfertas,
+            AceptoContatoTelefonico = entity.ContactabilidadMovil,
+            AceptoContatoEmail = entity.ContactabilidadEmail,
+            AceptoContatoSMS = entity.ContactabilidadSms,
+            AceptoContatoWhatsApp = entity.ContactabilidadWhatsapp
         };
 
         DescifrarDatosSensibles(response, entity, entity.EmpresaId);
@@ -82,12 +91,12 @@ public class ConsentimientosBL : IConsentimientoService
     public int CrearConsentimiento(TycBaseContext context, Consentimiento entity)
     {
         //Guardar datos ANTES de cifrar (para el email)
-        string emailDestinatario = entity.ConsEmail;
-        string nombreCompleto = $"{entity.ConsNombre} {entity.ConsApellido}".Trim(); 
-        string nombreCliente = entity.ConsNombre;
-        string apellidoCliente = entity.ConsApellido;
-        string movilCliente = entity.ConsMovil;
-        string identificacionCliente = entity.ConsIdentificacion;
+        string emailDestinatario = entity.EmailCliente;
+        string nombreCompleto = $"{entity.NombreCliente} {entity.ApellidoCliente}".Trim(); 
+        string nombreCliente = entity.NombreCliente;
+        string apellidoCliente = entity.ApellidoCliente;
+        string movilCliente = entity.MovilCliente;
+        string identificacionCliente = entity.IdentificacionCliente;
         string asunto = _configuration.GetValue<string>("Email:SubjectCreate") ?? "Aceptación Terminos y Condiciones";
 
         //Obtener datos de la empresa ANTES del Task.Run (mientras el context está activo)
@@ -97,7 +106,7 @@ public class ConsentimientosBL : IConsentimientoService
             _logger.LogWarning("No se encontró empresa {EmpresaId}", entity.EmpresaId);
         }
 
-        var tipoIdent = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.ClasTipoIdentificacion1);
+        var tipoIdent = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1);
 
         var tiposRequeridos = new List<string> { ConstantesTyc.tipoTextoSaludoCorreo, ConstantesTyc.tipoTextoTextoAlternoCorreo };
         var textos = _textoService.ObtenerTextosPorEmpresaYTiposComoDiccionario(
@@ -147,13 +156,13 @@ public class ConsentimientosBL : IConsentimientoService
 
         //Cifrar y crear el consentimiento
         CifrarDatosSensibles(entity);
-        entity.ConsGuid = Guid.NewGuid();
+        entity.GuId = Guid.NewGuid();
 
         var created = _repository.CrearConsentimiento(context, entity);
-        int consentimientoId = created.ConsConsecuencia;
+        int consentimientoId = created.Id;
 
         // 4. Generar link del formulario (no necesita el context)
-        string guidConcatenado = entity.ConsGuid.ToString() + entity.ConsGuid.ToString();
+        string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
         string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
             .Encrypt256(guidConcatenado, true);
 
@@ -161,19 +170,7 @@ public class ConsentimientosBL : IConsentimientoService
 
         //Enviar email en background (sin usar el context)
         if (empresa != null && !string.IsNullOrWhiteSpace(emailDestinatario))
-        {
-            // Capturar los valores en variables locales para el closure
-           /* var emailRequest = new EnviarEmailConsentimientoRQ
-            {
-                EmailDestinatario = emailDestinatario,
-                NombreCliente = nombreCompleto,
-                NombreEmpresa = empresa.Nombre,
-                NumeroContacto = empresa.Telefono ?? "N/A",
-                LinkFormulario = linkFormulario,
-                TextoAlternativo = textoAlternoPersonalizado ?? "",
-                TextoSaludo = textoSaludoPersonalizado ?? ""
-            };*/
-
+        {   
             // Los textos ya vienen procesados desde ConsentimientosBL
             // Solo los pasamos al template
             var valores = new Dictionary<string, string>
@@ -282,7 +279,9 @@ public class ConsentimientosBL : IConsentimientoService
             request.Dispositivo,
             request.OpcionesContactabilidad,
             politicasDict,
-            request.FechaFirma
+            request.FechaFirma,
+            request.Estado
+            
         );
 
         return actualizado;
@@ -387,7 +386,8 @@ public class ConsentimientosBL : IConsentimientoService
         var (consentimiento, empresa) = ValidarConsentimientoYEmpresa(context, guid, subdominio);
 
         var textos = _textoRepository.GetByEmpresa(context, empresa.EmpresaId, true);
-        var tipoIdent = _repository.GetTipoIdentificacion(context, empresa.EmpresaId, (int)consentimiento.ClasTipoIdentificacion1);
+        var tipoIdent = _repository.GetTipoIdentificacion(context, 
+            empresa.EmpresaId, (int)consentimiento.TipoIdentificacion1);
 
         return new FormularioConsentimientoRS
         {
@@ -466,7 +466,7 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var data = new ConsentimientoData
         {
-            Id = entity.ConsConsecuencia
+            Id = entity.Id
         };
 
         data.TipoIdentificacion = tipoIdentificacion;
@@ -474,20 +474,20 @@ public class ConsentimientosBL : IConsentimientoService
         // Desencriptar datos sensibles
         string llaveEmpresa = empresaId.ToString();
 
-        if (!string.IsNullOrEmpty(entity.ConsNombre))
-            data.Nombres = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ConsNombre, true);
+        if (!string.IsNullOrEmpty(entity.NombreCliente))
+            data.Nombres = new BaseCifrado(llaveEmpresa).Decrypt256(entity.NombreCliente, true);
 
-        if (!string.IsNullOrEmpty(entity.ConsApellido))
-            data.Apellidos = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ConsApellido, true);
+        if (!string.IsNullOrEmpty(entity.ApellidoCliente))
+            data.Apellidos = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ApellidoCliente, true);
 
-        if (!string.IsNullOrEmpty(entity.ConsEmail))
-            data.Email = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ConsEmail, true);
+        if (!string.IsNullOrEmpty(entity.EmailCliente))
+            data.Email = new BaseCifrado(llaveEmpresa).Decrypt256(entity.EmailCliente, true);
 
-        if (!string.IsNullOrEmpty(entity.ConsMovil))
-            data.Telefono = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ConsMovil, true);
+        if (!string.IsNullOrEmpty(entity.MovilCliente))
+            data.Telefono = new BaseCifrado(llaveEmpresa).Decrypt256(entity.MovilCliente, true);
 
-        if (!string.IsNullOrEmpty(entity.ConsIdentificacion))
-            data.Identificacion = new BaseCifrado(llaveEmpresa).Decrypt256(entity.ConsIdentificacion, true);
+        if (!string.IsNullOrEmpty(entity.IdentificacionCliente))
+            data.Identificacion = new BaseCifrado(llaveEmpresa).Decrypt256(entity.IdentificacionCliente, true);
 
         return data;
     }
@@ -505,7 +505,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (!_repository.Exists(context, request.ConsentimientoId))
             throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
 
-        if (consentimiento.ConsConsecuencia != request.ConsentimientoId)
+        if (consentimiento.Id != request.ConsentimientoId)
             throw new InvalidOperationException("El ID de consentimiento no coincide con el del formulario");
 
         ValidarOpcionesContactabilidad(request.OpcionesContactabilidad);
@@ -517,7 +517,8 @@ public class ConsentimientosBL : IConsentimientoService
             request.Dispositivo,
             request.OpcionesContactabilidad,
             politicasDict,
-            request.FechaFirma
+            request.FechaFirma,
+            request.Estado
         );
     }
 
@@ -551,22 +552,22 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
-        entity.ConsNombre = cifrador.Cifrar(entity.ConsNombre);
-        entity.ConsApellido = cifrador.Cifrar(entity.ConsApellido);
-        entity.ConsEmail = cifrador.Cifrar(entity.ConsEmail);
-        entity.ConsIdentificacion = cifrador.Cifrar(entity.ConsIdentificacion);
-        entity.ConsMovil = cifrador.Cifrar(entity.ConsMovil);
+        entity.NombreCliente = cifrador.Cifrar(entity.NombreCliente);
+        entity.ApellidoCliente = cifrador.Cifrar(entity.ApellidoCliente);
+        entity.EmailCliente = cifrador.Cifrar(entity.EmailCliente);
+        entity.IdentificacionCliente = cifrador.Cifrar(entity.IdentificacionCliente);
+        entity.MovilCliente = cifrador.Cifrar(entity.MovilCliente);
     }
 
     private void DescifrarDatosSensibles(ConsentimientoData data, Consentimiento entity, int empresaId)
     {
         var cifrador = new CifradoHelper(empresaId.ToString());
 
-        data.Nombres = cifrador.Descifrar(entity.ConsNombre);
-        data.Apellidos = cifrador.Descifrar(entity.ConsApellido);
-        data.Email = cifrador.Descifrar(entity.ConsEmail);
-        data.Telefono = cifrador.Descifrar(entity.ConsMovil);
-        data.Identificacion = cifrador.Descifrar(entity.ConsIdentificacion);
+        data.Nombres = cifrador.Descifrar(entity.NombreCliente);
+        data.Apellidos = cifrador.Descifrar(entity.ApellidoCliente);
+        data.Email = cifrador.Descifrar(entity.EmailCliente);
+        data.Telefono = cifrador.Descifrar(entity.MovilCliente);
+        data.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
     }
 
     // Sobrecarga para ConfirmacionConsentimientoRS
@@ -574,11 +575,11 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var cifrador = new CifradoHelper(empresaId.ToString());
 
-        response.Nombres = cifrador.Descifrar(entity.ConsNombre);
-        response.Apellidos = cifrador.Descifrar(entity.ConsApellido);
-        response.Email = cifrador.Descifrar(entity.ConsEmail);
-        response.Identificacion = cifrador.Descifrar(entity.ConsIdentificacion);
-        response.Telefono = cifrador.Descifrar(entity.ConsMovil);
+        response.Nombres = cifrador.Descifrar(entity.NombreCliente);
+        response.Apellidos = cifrador.Descifrar(entity.ApellidoCliente);
+        response.Email = cifrador.Descifrar(entity.EmailCliente);
+        response.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
+        response.Telefono = cifrador.Descifrar(entity.MovilCliente);
     }
 
     private Guid ValidarYExtraerGuid(string idEncriptado)
@@ -628,7 +629,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (consentimiento == null)
             throw new InvalidOperationException("No se encontró el consentimiento");
 
-        if (consentimiento.ConsFechaAceptacionConsentimiento.HasValue)
+        if (consentimiento.FechaAceptacion.HasValue)
             throw new InvalidOperationException("Este formulario ya fue completado");
 
         // Buscar empresa
@@ -652,9 +653,9 @@ public class ConsentimientosBL : IConsentimientoService
     public List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha, string? estado)
     {
         // Validar estado si viene con valor
-        if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P" }.Contains(estado.ToUpper()))
+        if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
         {
-            throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente)");
+            throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
         var consentimientos = _repository.ListarPorFiltros(context, fecha, estado);
@@ -665,21 +666,23 @@ public class ConsentimientosBL : IConsentimientoService
             var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
             // Descifrar nombres
-            string nombre = cifrador.Descifrar(entity.ConsNombre) ?? string.Empty;
-            string apellido = cifrador.Descifrar(entity.ConsApellido) ?? string.Empty;
+            string nombre = cifrador.Descifrar(entity.NombreCliente) ?? string.Empty;
+            string apellido = cifrador.Descifrar(entity.ApellidoCliente) ?? string.Empty;
             string nombreCompleto = $"{nombre} {apellido}".Trim();
 
             // Generar link encriptado
-            string guidConcatenado = entity.ConsGuid.ToString() + entity.ConsGuid.ToString();
+            string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
             string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
                 .Encrypt256(guidConcatenado, true);
 
             resultado.Add(new ConsentimientoListItemRS
             {
-                Id = entity.ConsConsecuencia,
+                Id = entity.GuId,
                 NombreCompleto = nombreCompleto,
-                FechaAceptacion = entity.ConsFechaAceptacionConsentimiento,
-                Link = Uri.EscapeDataString(guidEncriptado)
+                FechaCreacion = entity.FechaCreacion,
+                FechaAceptacion = entity.FechaAceptacion,
+                Link = Uri.EscapeDataString(guidEncriptado),
+                Estado = entity.Estado
             });
         }
 

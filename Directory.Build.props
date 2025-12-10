@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
 	  <UserSecretsId>a0f6f205-78ce-46b6-ac1d-e6d82a3d9e83</UserSecretsId>
 	  <NoWin32Manifest>true</NoWin32Manifest>
       <Version>2025.1021.31</Version>

@@ -13,7 +13,7 @@ public interface IConsentimientoRepository
     bool ActualizarAceptaciones(TycBaseContext context, int consentimientoId, string medio,
     List<string> opcionesContactabilidad,
     Dictionary<string, int> politicasAceptadas,
-    DateTime fechaAceptacion);
+    DateTime fechaAceptacion, string estado);
     bool Exists(TycBaseContext context, int id);
     TipoIdentificacion GetTipoIdentificacion(TycBaseContext context, int empresaId, int tipoDocumentoId);
     List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado);

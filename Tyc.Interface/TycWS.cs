@@ -56,7 +56,7 @@ public class TycWS : Service
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Consentimiento>(request);
-            entity.UsuaUsuario = int.Parse(userSession.IDUsuario);
+            entity.UsuarioId = int.Parse(userSession.IDUsuario);
             entity.EmpresaId = (int)userSession.IDEmpresa; 
 
             var id = _consentimientoService.CrearConsentimiento(dbSigo, entity);

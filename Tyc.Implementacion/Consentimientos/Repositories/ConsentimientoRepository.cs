@@ -13,13 +13,13 @@ public class ConsentimientoRepository : IConsentimientoRepository
     public Consentimiento GetById(TycBaseContext context, int id)
     {
         return context.GetTable<Consentimiento>()
-            .FirstOrDefault(x => x.ConsConsecuencia == id);
+            .FirstOrDefault(x => x.Id == id);
     }
 
     public Consentimiento GetByGuid(TycBaseContext context, Guid guid)
     {
         return context.GetTable<Consentimiento>()
-            .FirstOrDefault(x => x.ConsGuid == guid);
+            .FirstOrDefault(x => x.GuId == guid);
     }
     public Consentimiento CrearConsentimiento(TycBaseContext context, Consentimiento consentimientoEntity)
     {     
@@ -31,64 +31,65 @@ public class ConsentimientoRepository : IConsentimientoRepository
     public bool ActualizarAceptaciones(
     TycBaseContext context,
     int consentimientoId,
-    string medio,
+    string medio,    
     List<string> opcionesContactabilidad,
     Dictionary<string, int> politicasAceptadas,
-    DateTime fechaAceptacion)
+    DateTime fechaAceptacion, string estado)
     {
         var entity = context.GetTable<Consentimiento>()
-            .FirstOrDefault(x => x.ConsConsecuencia == consentimientoId);
+            .FirstOrDefault(x => x.Id == consentimientoId);
 
         if (entity == null)
             return false;
 
         // Actualizar fecha de aceptación
-        entity.ConsFechaAceptacionConsentimiento = fechaAceptacion;
-        entity.ConsMedio = medio;
+        entity.FechaAceptacion = fechaAceptacion;
+        entity.MedioAceptacion = medio;
+        entity.Estado = estado;
 
         // Procesar opciones de contactabilidad
-        entity.ConsContactabilidadEmail = opcionesContactabilidad?.Contains("Email") == true ? OpcionSiNo.Si : OpcionSiNo.No;
-        entity.ConsContactabilidadMovil = opcionesContactabilidad?.Contains("Movil") == true ? OpcionSiNo.Si : OpcionSiNo.No;
-        entity.ConsContactabilidadSms = opcionesContactabilidad?.Contains("SMS") == true ? OpcionSiNo.Si : OpcionSiNo.No;
-        entity.ConsContactabilidadWhatsapp = opcionesContactabilidad?.Contains("WhatsApp") == true ? OpcionSiNo.Si : OpcionSiNo.No;
+        entity.ContactabilidadEmail = opcionesContactabilidad?.Contains("Email") == true ? OpcionSiNo.Si : OpcionSiNo.No;
+        entity.ContactabilidadMovil = opcionesContactabilidad?.Contains("Movil") == true ? OpcionSiNo.Si : OpcionSiNo.No;
+        entity.ContactabilidadSms = opcionesContactabilidad?.Contains("SMS") == true ? OpcionSiNo.Si : OpcionSiNo.No;
+        entity.ContactabilidadWhatsapp = opcionesContactabilidad?.Contains("WhatsApp") == true ? OpcionSiNo.Si : OpcionSiNo.No;
 
         // Procesar políticas aceptadas
         if (politicasAceptadas != null)
         {
             // TITULOTYC
-            if (politicasAceptadas.ContainsKey("TITULOTYC"))
+            if (politicasAceptadas.TryGetValue("TITULOTYC", out int value))
             {
-                entity.ConsAceptoTerminosEmpresa = OpcionSiNo.Si;
-                entity.TextTerminosEmpresa = politicasAceptadas["TITULOTYC"];
+                entity.AceptoTYC = OpcionSiNo.Si;
+                entity.TerminosEmpresaId = value;
             }
             else
             {
-                entity.ConsAceptoTerminosEmpresa = OpcionSiNo.No;
-                entity.TextTerminosEmpresa = null;
+                entity.AceptoTYC = OpcionSiNo.No;
+                entity.TerminosEmpresaId = null;
             }
 
             // TITULOCOMPARTIRDATOS
-            if (politicasAceptadas.ContainsKey("TITULOCOMPARTIRDATOS"))
+            if (politicasAceptadas.TryGetValue("TITULOCOMPARTIRDATOS", out int value1))
             {
-                entity.ConsAceptoTerminosCompartirInfo = OpcionSiNo.Si;
-                entity.TgeTextTerminoCompartirInfo = politicasAceptadas["TITULOCOMPARTIRDATOS"];
+                entity.AceptoCompartirInfo   = OpcionSiNo.Si;
+                entity.CompartirInfoId = value1;
             }
             else
             {
-                entity.ConsAceptoTerminosCompartirInfo = OpcionSiNo.No;
-                entity.TgeTextTerminoCompartirInfo = null;
+                entity.AceptoCompartirInfo = OpcionSiNo.No;
+                entity.CompartirInfoId = null;
             }
 
             // TITULOTERMINOSOFERTAS
-            if (politicasAceptadas.ContainsKey("TITULOTERMINOSOFERTAS"))
+            if (politicasAceptadas.TryGetValue("TITULOTERMINOSOFERTAS", out int value2))
             {
-                entity.ConsAceptoTerminosRecibirOfertas = OpcionSiNo.Si;
-                entity.TgeTextOfertas = politicasAceptadas["TITULOTERMINOSOFERTAS"];
+                entity.AceptoRecibirOfertas = OpcionSiNo.Si;
+                entity.RecibirOfertasId = value2;
             }
             else
             {
-                entity.ConsAceptoTerminosRecibirOfertas = OpcionSiNo.No;
-                entity.TgeTextOfertas = null;
+                entity.AceptoRecibirOfertas = OpcionSiNo.No;
+                entity.RecibirOfertasId = null;
             }
         }
 
@@ -99,7 +100,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
     public bool Exists(TycBaseContext context, int id)
     {
         return context.GetTable<Consentimiento>()
-            .Any(x => x.ConsConsecuencia == id);
+            .Any(x => x.Id == id);
     }
 
     public TipoIdentificacion GetTipoIdentificacion(TycBaseContext context, int empresaId, int tipoDocumentoId)
@@ -118,8 +119,8 @@ public class ConsentimientoRepository : IConsentimientoRepository
             var fechaInicio = fecha.Value.Date;
             var fechaFin = fechaInicio.AddDays(1);
 
-            query = query.Where(x => x.ConsFechaCreacionConsentimiento >= fechaInicio
-                                  && x.ConsFechaCreacionConsentimiento < fechaFin);
+            query = query.Where(x => x.FechaCreacion >= fechaInicio
+                                  && x.FechaCreacion < fechaFin);
         }
 
         // Filtro por estado
@@ -128,15 +129,15 @@ public class ConsentimientoRepository : IConsentimientoRepository
             if (estado.Equals("F", StringComparison.OrdinalIgnoreCase))
             {
                 // Firmado: tiene fecha de aceptación
-                query = query.Where(x => x.ConsFechaAceptacionConsentimiento != null);
+                query = query.Where(x => x.FechaAceptacion != null);
             }
             else if (estado.Equals("P", StringComparison.OrdinalIgnoreCase))
             {
                 // Pendiente: no tiene fecha de aceptación
-                query = query.Where(x => x.ConsFechaAceptacionConsentimiento == null);
+                query = query.Where(x => x.FechaAceptacion == null);
             }
         }
 
-        return query.OrderByDescending(x => x.ConsFechaCreacionConsentimiento).ToList();
+        return query.OrderByDescending(x => x.FechaCreacion).ToList();
     }
 }
