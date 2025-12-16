@@ -70,8 +70,8 @@ public class UpdateEmpresa : IReturn<EmpresaResponse>
     public string Website { get; set; }
     public string MailContactos { get; set; }
     public string LogoEmpresa { get; set; }
-	public string LogoIso9000 { get; set; }
-    public string LogoIso27001 { get; set; }
+	public byte[] LogoIso9000 { get; set; }
+    public byte[] LogoIso27001 { get; set; }
     public string NombreContacto { get; set; }
     public string MailDelContacto { get; set; }
     public string TelContacto { get; set; }

@@ -1,5 +1,4 @@
 using AdministradorCore.BaseHost;
-using FrameAppWS.Middleware;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
@@ -34,6 +33,7 @@ using Tyc.Interface.Services;
 using Tyc.Modelo.Configuracion;
 
 namespace FrameAppWS;
+
 public class Program
 {
     public static void Main(string[] args)
@@ -49,13 +49,28 @@ public class Program
 
             LogsSerilog.ConfigureLogging(builder.Configuration, builder.Environment.EnvironmentName);
 
+            // === CORS Configuration ===
+            var allowedOrigins = builder.Configuration
+                .GetSection("Cors:AllowedOrigins")
+                .Get<string[]>() ?? [];
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigins", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                });
+            });  
+
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(ConsentimientoMappingConfig).Assembly);
 
             builder.Services.AddSingleton(mapsterConfig);
             builder.Services.AddScoped<IMapper, Mapper>();
 
-            // Registrar configuraciones de mapeo con Scrutor
             builder.Services.Scan(scan => scan
                 .FromAssemblyOf<Program>()
                 .AddClasses(classes => classes.AssignableTo<IRegister>())
@@ -63,21 +78,16 @@ public class Program
                 .WithScopedLifetime());
 
             builder.Services.Configure<EmailConfiguration>(
-            builder.Configuration.GetSection("Email")
+                builder.Configuration.GetSection("Email")
             );
 
             builder.Services.AddSingleton<ITemplateRenderer, SimpleTemplateRenderer>();
 
-            var emailProvider = builder.Configuration["Email:Provider"]; // "SMTP" o "SDK"
-
+            var emailProvider = builder.Configuration["Email:Provider"];
             if (emailProvider == "SMTP")
-            {
                 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
-            }                
             else
-            {
                 builder.Services.AddScoped<IEmailService, AwsSesEmailService>();
-            }                
 
             builder.Services.AddScoped<IConsentimientoRepository, ConsentimientoRepository>();
             builder.Services.AddScoped<ITextoRepository, TextoRepository>();
@@ -85,7 +95,6 @@ public class Program
             builder.Services.AddScoped<IFirmaRepository, FirmaRepository>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
- 
             builder.Services.AddScoped<ITextoService, TextosBL>();
             builder.Services.AddScoped<IEmpresaService, EmpresasBL>();
 
@@ -110,12 +119,14 @@ public class Program
             });
 
             builder.Services.AddHostedService<MonitoringWorker>();
-            
 
             var settings = Settings.GetInstance().SetConfiguration(builder.Configuration);
             settings.SetDbConfig(true);
-           
-            PooledRedisClientManager redisMngr = new PooledRedisClientManager(settings.GetRedisDbIndex(true), settings.GetRedisUrl(true));
+
+            PooledRedisClientManager redisMngr = new PooledRedisClientManager(
+                settings.GetRedisDbIndex(true),
+                settings.GetRedisUrl(true)
+            );
             builder.Services.AddSingleton<IRedisClientsManager>(c => redisMngr);
 
             var levelSwitch = new LoggingLevelSwitch
@@ -126,22 +137,20 @@ public class Program
 
             var app = builder.Build();
 
+            // === CORS Middleware - PRIMERO que todo ===
+            app.UseCors("AllowSpecificOrigins");
 
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }      
+            }
 
             var appHost = new AppHostFramework(Log.Logger)
             {
                 AppSettings = new NetCoreAppSettings(builder.Configuration)
             };
 
-            // Registrar assemblies adicionales donde están los servicios
             appHost.ServiceAssemblies.Add(typeof(ConsentimientoRQ).Assembly);
-
-            var baseDomain = builder.Configuration["Cors:BaseDomain"] ?? "midominio.com";
-            app.UseDynamicCors(baseDomain);
 
             app.UseServiceStack(appHost);
 
@@ -159,18 +168,5 @@ public class Program
             Log.Fatal($"Failed to start {Assembly.GetExecutingAssembly().GetName().Name}", ex);
             throw;
         }
-    }
-
-    private static void ConfigureLogging(IConfiguration configuration, string environment)
-    {
-        Log.Logger = new LoggerConfiguration()
-            .Enrich.FromLogContext()
-            //.Enrich.WithExceptionDetails()
-            //.Enrich.WithMachineName()
-            .WriteTo.Debug()
-            .WriteTo.Console()
-            .Enrich.WithProperty("Environment", environment)
-            .ReadFrom.Configuration(configuration)
-            .CreateLogger();
     }
 }

@@ -11,7 +11,7 @@ namespace Tyc.Interface.Services;
 public interface IConsentimientoService
 {
     ConfirmacionConsentimientoRS ObtenerConfirmacionConsentimiento(TycBaseContext context, Guid id);
-    int CrearConsentimiento(TycBaseContext context, Consentimiento entity);
+    Guid CrearConsentimiento(TycBaseContext context, Consentimiento entity);
 
     bool ActualizarConsentimientoConFirma(TycBaseContext context, ActualizarConsentimientoConFirma request);
     FormularioConsentimientoRS ObtenerFormularioConsentimiento(TycBaseContext context, string subdominio,
@@ -20,5 +20,6 @@ public interface IConsentimientoService
     bool ActualizarConsentimiento(TycBaseContext context, ActualizarConsentimiento request);
 
     List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha, string? estado);
+    List<ConsentimientosRS> ListarConsentimientosPorEmpresa(TycBaseContext context, int empresaId, DateTime? fecha, string? estado);
 }
 

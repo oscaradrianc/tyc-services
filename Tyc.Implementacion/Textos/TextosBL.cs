@@ -260,37 +260,62 @@ public class TextosBL : ITextoService
         return sanitizer;
     }
 
-    public bool GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId)
+    public GuardarListaTextosRS GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId)
     {
-        bool result = false;
+        var result = new GuardarListaTextosRS
+        {
+            IdsAfectados = new List<int>()
+        };
 
         if (items == null || !items.Any())
             return result;
 
         foreach (var item in items)
         {
-            // Sanitizar HTML
             var textoLimpio = _htmlSanitizer.Sanitize(item.TextoTerminos ?? string.Empty);
+            var existeRegistro = item.Id.HasValue && item.Id.Value > 0 && _repository.Exists(context, item.Id.Value);
 
-            if (item.Id.HasValue && item.Id.Value > 0 && _repository.Exists(context, item.Id.Value))
+            if (existeRegistro)
             {
-                // Actualizar
-                var entity = new Texto
+                if (item.Versionar)
                 {
-                    TextText = item.Id.Value,
-                    TextTipoTexto = item.TipoTexto,
-                    TextTextoDelosTerminos = textoLimpio,
-                    TextEstado = item.Estado ?? EstadoTexto.Activo,
-                    UsuaUsuario = usuarioId
-                };
+                    // Modo versionado: inactivar actual + insertar nuevo
+                    _repository.CambiarEstado(context, item.Id.Value, EstadoTexto.Inactivo);
 
-                _repository.Update(context, entity);
-                result.Actualizados++;
-                result.IdsAfectados.Add(item.Id.Value);
+                    var newEntity = new Texto
+                    {
+                        EmpresaId = item.EmpresaId,
+                        TextTipoTexto = item.TipoTexto,
+                        TextTextoDelosTerminos = textoLimpio,
+                        TextEstado = item.Estado ?? EstadoTexto.Activo,
+                        TextFechaCreacion = DateTime.UtcNow,
+                        UsuaUsuario = usuarioId
+                    };
+
+                    var created = _repository.Create(context, newEntity);
+                    result.Versionados++;
+                    result.IdsAfectados.Add(created.TextText);
+                }
+                else
+                {
+                    // Modo normal: actualizar existente
+                    var entity = new Texto
+                    {
+                        TextText = item.Id.Value,
+                        TextTipoTexto = item.TipoTexto,
+                        TextTextoDelosTerminos = textoLimpio,
+                        TextEstado = item.Estado ?? EstadoTexto.Activo,
+                        UsuaUsuario = usuarioId
+                    };
+
+                    _repository.Update(context, entity);
+                    result.Actualizados++;
+                    result.IdsAfectados.Add(item.Id.Value);
+                }
             }
             else
             {
-                // Insertar
+                // Insertar nuevo
                 var entity = new Texto
                 {
                     EmpresaId = item.EmpresaId,

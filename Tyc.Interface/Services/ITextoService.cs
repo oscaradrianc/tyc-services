@@ -39,5 +39,5 @@ public interface ITextoService
     /// <param name="variables">Diccionario de variables. Ej: { "NombreCliente": "Juan" }</param>
     /// <returns>Texto con placeholders reemplazados</returns>
     string ProcesarPlantillaTexto(string plantilla, Dictionary<string, string> variables);
-    bool GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId);
+    GuardarListaTextosRS GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId);
 }

@@ -80,9 +80,7 @@ public class EmpresasBL : IEmpresaService
                 "Debe especificar si maneja términos y condiciones (SI/NO)");
         }
 
-        // Validar opciones SI/NO
-        ValidarOpcionSiNo(entity.LogoIso9000, "TieneIso9000");
-        ValidarOpcionSiNo(entity.LogoIso27001, "TieneIso27001");
+        // Validar opciones SI/NO        
         ValidarOpcionSiNo(entity.ManejaTerminosYCondiciones, "ManejaTerminosYCondiciones");
         ValidarOpcionSiNo(entity.ManejaTycCompartirInfo, "ManejaTycCompartirInfo");
         ValidarOpcionSiNo(entity.ManejaTycRecibirOfertas, "ManejaTycRecibirOfertas");

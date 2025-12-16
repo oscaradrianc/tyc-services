@@ -76,7 +76,7 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "clas_tipoidentificacion1")]
         public int? TipoIdentificacion1 { get; set; }
-        [Column(Name = "cons_estado")]
+        [Column(Name = "cons_estado", IsDbGenerated = true)]
         public string Estado { get; set; }
     }
 }

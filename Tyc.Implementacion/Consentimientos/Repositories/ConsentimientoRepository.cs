@@ -30,14 +30,14 @@ public class ConsentimientoRepository : IConsentimientoRepository
 
     public bool ActualizarAceptaciones(
     TycBaseContext context,
-    int consentimientoId,
+    Guid consentimientoId,
     string medio,    
     List<string> opcionesContactabilidad,
     Dictionary<string, int> politicasAceptadas,
     DateTime fechaAceptacion, string estado)
     {
         var entity = context.GetTable<Consentimiento>()
-            .FirstOrDefault(x => x.Id == consentimientoId);
+            .FirstOrDefault(x => x.GuId == consentimientoId);
 
         if (entity == null)
             return false;
@@ -56,8 +56,8 @@ public class ConsentimientoRepository : IConsentimientoRepository
         // Procesar políticas aceptadas
         if (politicasAceptadas != null)
         {
-            // TITULOTYC
-            if (politicasAceptadas.TryGetValue("TITULOTYC", out int value))
+            // TITULOTRATAMENTODATOS
+            if (politicasAceptadas.TryGetValue("TITULOTRATAMENTODATOS", out int value))
             {
                 entity.AceptoTYC = OpcionSiNo.Si;
                 entity.TerminosEmpresaId = value;
@@ -97,10 +97,10 @@ public class ConsentimientoRepository : IConsentimientoRepository
         return true;
     }
 
-    public bool Exists(TycBaseContext context, int id)
+    public bool Exists(TycBaseContext context, Guid id)
     {
         return context.GetTable<Consentimiento>()
-            .Any(x => x.Id == id);
+            .Any(x => x.GuId == id);
     }
 
     public TipoIdentificacion GetTipoIdentificacion(TycBaseContext context, int empresaId, int tipoDocumentoId)
@@ -136,6 +136,32 @@ public class ConsentimientoRepository : IConsentimientoRepository
                 // Pendiente: no tiene fecha de aceptación
                 query = query.Where(x => x.FechaAceptacion == null);
             }
+        }
+
+        return query.OrderByDescending(x => x.FechaCreacion).ToList();
+    }
+
+    public List<Consentimiento> ListarPorEmpresa(TycBaseContext context, int empresaId, DateTime? fecha, string? estado)
+    {
+        var query = context.GetTable<Consentimiento>()
+            .Where(x => x.EmpresaId == empresaId);
+
+        if (fecha.HasValue)
+        {
+            var fechaInicio = fecha.Value.Date;
+            var fechaFin = fechaInicio.AddDays(1);
+            query = query.Where(x => x.FechaCreacion >= fechaInicio && x.FechaCreacion < fechaFin);
+        }
+
+        if (!string.IsNullOrWhiteSpace(estado))
+        {
+            query = estado.ToUpper() switch
+            {
+                "F" => query.Where(x => x.FechaAceptacion != null && x.Estado == "F"),
+                "P" => query.Where(x => x.FechaAceptacion == null),
+                "R" => query.Where(x => x.Estado == "R"),
+                _ => query
+            };
         }
 
         return query.OrderByDescending(x => x.FechaCreacion).ToList();

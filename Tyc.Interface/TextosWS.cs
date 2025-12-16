@@ -236,4 +236,33 @@ public class TextosWS : Service
             };
         }
     }
+
+    public ApiResponse<GuardarListaTextosRS> Put(GuardarListaTextos request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            if (request.Items == null || !request.Items.Any())
+            {
+                return new ApiResponse<GuardarListaTextosRS>
+                {
+                    Success = false,
+                    Mensaje = "No se proporcionaron items para guardar"
+                };
+            }
+
+            var result = _textoService.GuardarLista(
+                dbSigo,
+                request.Items,
+                int.Parse(userSession.IDUsuario));
+
+            return new ApiResponse<GuardarListaTextosRS>
+            {
+                Data = result,
+                Success = true,
+                Mensaje = $"Procesados: {result.Insertados} insertados, {result.Actualizados} actualizados"
+            };
+        }
+    }
 }

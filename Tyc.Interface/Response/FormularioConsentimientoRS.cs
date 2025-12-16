@@ -19,8 +19,8 @@ public class ConfigEmpresaData
     public string Website { get; set; }
     public string MailContactos { get; set; }
     public string LogoEmpresa { get; set; }
-    public string LogoIso9000 { get; set; }
-    public string LogoIso27001 { get; set; }
+    public byte[] LogoIso9000 { get; set; }
+    public byte[] LogoIso27001 { get; set; }
     public string ManejaTerminosYCondiciones { get; set; }
     public string ManejaTycCompartirInfo { get; set; }
     public string ManejaTycRecibirOfertas { get; set; }

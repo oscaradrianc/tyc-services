@@ -2,6 +2,7 @@
 using MapsterMapper;
 using ServiceStack;
 using ServiceStack.Host;
+using System;
 using System.Collections.Generic;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
@@ -48,7 +49,7 @@ public class TycWS : Service
         }
     }
 
-    public ApiResponse<int> Post(ConsentimientoRQ request)
+    public ApiResponse<Guid> Post(ConsentimientoRQ request)
     {       
         // UserSession va por defecto           
         CustomUserSession userSession = SessionAs<CustomUserSession>();
@@ -61,7 +62,7 @@ public class TycWS : Service
 
             var id = _consentimientoService.CrearConsentimiento(dbSigo, entity);
 
-            return new ApiResponse<int>
+            return new ApiResponse<Guid>
             {
                 Data = id,
                 Mensaje = "Consentimiento creado exitosamente",
@@ -102,6 +103,28 @@ public class TycWS : Service
             );
 
             return new ApiResponse<List<ConsentimientoListItemRS>>
+            {
+                Data = resultado,
+                Mensaje = $"Se encontraron {resultado.Count} consentimientos",
+                Success = true
+            };
+        }
+    }
+
+    public ApiResponse<List<ConsentimientosRS>> Get(ListarConsentimientosPorEmpresaRQ request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var resultado = _consentimientoService.ListarConsentimientosPorEmpresa(
+                dbSigo,
+                request.EmpresaId,
+                request.Fecha,
+                request.Estado
+            );
+
+            return new ApiResponse<List<ConsentimientosRS>>
             {
                 Data = resultado,
                 Mensaje = $"Se encontraron {resultado.Count} consentimientos",

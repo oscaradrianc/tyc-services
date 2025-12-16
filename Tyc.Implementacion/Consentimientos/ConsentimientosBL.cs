@@ -88,7 +88,7 @@ public class ConsentimientosBL : IConsentimientoService
         return response;
     }
 
-    public int CrearConsentimiento(TycBaseContext context, Consentimiento entity)
+    public Guid CrearConsentimiento(TycBaseContext context, Consentimiento entity)
     {
         //Guardar datos ANTES de cifrar (para el email)
         string emailDestinatario = entity.EmailCliente;
@@ -159,7 +159,7 @@ public class ConsentimientosBL : IConsentimientoService
         entity.GuId = Guid.NewGuid();
 
         var created = _repository.CrearConsentimiento(context, entity);
-        int consentimientoId = created.Id;
+        Guid consentimientoId = created.GuId;
 
         // 4. Generar link del formulario (no necesita el context)
         string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
@@ -226,24 +226,18 @@ public class ConsentimientosBL : IConsentimientoService
 
     public bool ActualizarConsentimientoConFirma(TycBaseContext context, ActualizarConsentimientoConFirma request)
     {
-        // 1. Validar que el consentimiento existe
-        if (!_repository.Exists(context, request.ConsentimientoId))
-        {
-            throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
-        }
+        var consentimientoExistente = _repository.GetByGuid(context, request.ConsentimientoId);
 
-        // 2. Obtener el consentimiento para validar la Empresa
-        var consentimiento = _repository.GetById(context, request.ConsentimientoId);
-        if (consentimiento == null)
+        if (consentimientoExistente == null)
         {
             throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
-        }
+        }          
 
         // 3. Validar opciones de contactabilidad
         ValidarOpcionesContactabilidad(request.OpcionesContactabilidad);
 
         // 4. Validar y procesar políticas aceptadas
-        var politicasDict = ValidarYProcesarPoliticas(context, request.PoliticasAceptadas, consentimiento.EmpresaId);
+        var politicasDict = ValidarYProcesarPoliticas(context, request.PoliticasAceptadas, consentimientoExistente.EmpresaId);
 
         // 5. Validar y procesar firma
         byte[] firmaBytes = null;
@@ -253,10 +247,11 @@ public class ConsentimientosBL : IConsentimientoService
         }
 
         // 6. Verificar si ya existe una firma (decidir si reemplazar o error)
-        if (_firmaRepository.ExisteFirmaParaConsentimiento(context, request.ConsentimientoId))
+        if (_firmaRepository.ExisteFirmaParaConsentimiento(context, consentimientoExistente.Id))
         {
+            
             // Eliminar firma anterior
-            _firmaRepository.Eliminar(context, request.ConsentimientoId);
+            _firmaRepository.Eliminar(context, consentimientoExistente.Id);
         }
 
         // 7. Guardar nueva firma si existe
@@ -264,7 +259,7 @@ public class ConsentimientosBL : IConsentimientoService
         {
             var firma = new Firma
             {
-                ConsConsecuencia = request.ConsentimientoId,
+                ConsConsecuencia = consentimientoExistente.Id,
                 FirmBlob = firmaBytes,
                 FirmFechaCreacion = request.FechaFirma
             };
@@ -315,7 +310,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (politicas == null || !politicas.Any())
             return resultado;
 
-        var tiposValidos = new[] { "TITULOTYC", "TITULOCOMPARTIRDATOS", "TITULOTERMINOSOFERTAS" };
+        var tiposValidos = new[] { "TITULOTRATAMENTODATOS", "TITULOCOMPARTIRDATOS", "TITULOTERMINOSOFERTAS" };
 
         foreach (var politica in politicas)
         {
@@ -377,8 +372,8 @@ public class ConsentimientosBL : IConsentimientoService
         string subdominio,
         string idEncriptado)
     {
-        if (string.IsNullOrWhiteSpace(subdominio))
-            throw new ArgumentException("El subdominio es obligatorio");
+        //if (string.IsNullOrWhiteSpace(subdominio))
+        //    throw new ArgumentException("El subdominio es obligatorio");
         if (string.IsNullOrWhiteSpace(idEncriptado))
             throw new ArgumentException("El ID es obligatorio");
 
@@ -505,7 +500,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (!_repository.Exists(context, request.ConsentimientoId))
             throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
 
-        if (consentimiento.Id != request.ConsentimientoId)
+        if (consentimiento.GuId != request.ConsentimientoId)
             throw new InvalidOperationException("El ID de consentimiento no coincide con el del formulario");
 
         ValidarOpcionesContactabilidad(request.OpcionesContactabilidad);
@@ -638,12 +633,12 @@ public class ConsentimientosBL : IConsentimientoService
             throw new InvalidOperationException("No se encontró la Empresa asociada al consentimiento");
 
         // Validar subdominio
-        if (string.IsNullOrWhiteSpace(empresa.Subdominio))
-            throw new InvalidOperationException("La Empresa no tiene un subdominio configurado");
+        //if (string.IsNullOrWhiteSpace(empresa.Subdominio))
+        //    throw new InvalidOperationException("La Empresa no tiene un subdominio configurado");
 
-        string subdominioEmpresa = ExtraerSubdominio(empresa.Subdominio);
-        if (!subdominioEmpresa.Equals(subdominio, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("El subdominio no coincide con la Empresa");
+        //string subdominioEmpresa = ExtraerSubdominio(empresa.Subdominio);
+        //if (!subdominioEmpresa.Equals(subdominio, StringComparison.OrdinalIgnoreCase))
+        //    throw new InvalidOperationException("El subdominio no coincide con la Empresa");
 
         return (consentimiento, empresa);
     }
@@ -687,5 +682,46 @@ public class ConsentimientosBL : IConsentimientoService
         }
 
         return resultado;
+    }
+
+    public List<ConsentimientosRS> ListarConsentimientosPorEmpresa(
+    TycBaseContext context,
+    int empresaId,
+    DateTime? fecha,
+    string? estado)
+    {
+        if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
+        {
+            throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
+        }
+
+        var consentimientos = _repository.ListarPorEmpresa(context, empresaId, fecha, estado);
+
+        return consentimientos.Select(entity =>
+        {
+            var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
+
+            string nombre = cifrador.Descifrar(entity.NombreCliente) ?? string.Empty;
+            string apellido = cifrador.Descifrar(entity.ApellidoCliente) ?? string.Empty;
+            string email = cifrador.Descifrar(entity.EmailCliente) ?? string.Empty;
+            string identificacion = cifrador.Descifrar(entity.IdentificacionCliente) ?? string.Empty;
+            string telefono = cifrador.Descifrar(entity.MovilCliente) ?? string.Empty;
+
+            return new ConsentimientosRS
+            {
+                Id = entity.GuId,
+                Nombres = nombre,
+                Apellidos = apellido,
+                Identificacion = identificacion,
+                TipoIdentificacion = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1)?.Descripcion,
+                Email = email,
+                Telefono = telefono,
+                FechaCreacion = entity.FechaCreacion,
+                FechaAceptacion = entity.FechaAceptacion,     
+                Medio = entity.MedioAceptacion,
+                Estado = entity.Estado
+               
+            };
+        }).ToList();
     }
 }

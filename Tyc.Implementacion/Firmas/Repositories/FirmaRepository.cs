@@ -2,6 +2,7 @@
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 using System.Linq;
+using System;
 
 namespace Tyc.Implementacion.Firmas.Repositories;
 
