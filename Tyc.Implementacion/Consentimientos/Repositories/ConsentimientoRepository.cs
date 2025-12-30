@@ -91,6 +91,18 @@ public class ConsentimientoRepository : IConsentimientoRepository
                 entity.AceptoRecibirOfertas = OpcionSiNo.No;
                 entity.RecibirOfertasId = null;
             }
+
+            // TITULOTERMINOSOFERTAS
+            if (politicasAceptadas.TryGetValue("TITULOTERMINOSPERSONAJURIDICA", out int value3))
+            {
+                entity.AceptoTerminosPersonaJuridica = OpcionSiNo.Si;
+                entity.TerminosPersonaJuridicaId = value3;
+            }
+            else
+            {
+                entity.AceptoRecibirOfertas = OpcionSiNo.No;
+                entity.RecibirOfertasId = null;
+            }
         }
 
         context.SubmitChanges();

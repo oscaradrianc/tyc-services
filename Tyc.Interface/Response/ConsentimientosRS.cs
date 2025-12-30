@@ -1,9 +1,4 @@
-﻿using Devart.Data.Oracle;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Tyc.Interface.Response
 {
@@ -20,5 +15,8 @@ namespace Tyc.Interface.Response
         public DateTime? FechaAceptacion { get; set; }
         public string Medio { get; set; }
         public string Estado { get; set; }
+        public string TipoPersona { get; set; }
+        public string RazonSocial { get; set; }
+        public string NombreContacto { get; set; }
     }
 }

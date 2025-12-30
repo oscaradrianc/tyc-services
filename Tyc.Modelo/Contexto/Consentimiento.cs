@@ -76,7 +76,24 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "clas_tipoidentificacion1")]
         public int? TipoIdentificacion1 { get; set; }
+
         [Column(Name = "cons_estado", IsDbGenerated = true)]
         public string Estado { get; set; }
+
+        [Column(Name = "text_textoterminospersjuridica")]
+        public int? TerminosPersonaJuridicaId { get; set; }
+
+        [Column(Name = "cons_razonsocial")]
+        public string RazonSocial { get; set; }
+
+        [Column(Name = "cons_nombrecontacto")]
+        public string NombreContacto { get; set; }
+
+        [Column(Name = "cons_tipopersona")]
+        public string TipoPersona { get; set; }
+
+        [Column(Name = "cons_aceptoterminospersjuridica")]
+        public string AceptoTerminosPersonaJuridica { get; set; }
+
     }
 }

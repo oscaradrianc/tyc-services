@@ -8,12 +8,11 @@ namespace Tyc.Interface.Request
 {
     public class ConsentimientoPublicoRQ
     {
-        [Route("/consentimientos/{ConsentimientoId}/", "PUT")]
+        [Route("/consentimientos", "PUT")]
         public class ActualizarConsentimiento : IReturn<ApiResponse<bool>>
         {
-            public string Subdominio { get; set; }
             public string Id { get; set; }
-            public Guid ConsentimientoId { get; set; }       
+            public string Subdominio { get; set; }            
             public string Estado { get; set; }
             public List<PoliticaAceptadaItem> PoliticasAceptadas { get; set; }
             public List<string> OpcionesContactabilidad { get; set; }

@@ -59,7 +59,8 @@ public class ConsentimientosBL : IConsentimientoService
         if (entity == null)
             return null;
 
-        var tipoDoc = _repository.GetTipoIdentificacion(dbSigo, entity.EmpresaId, (int)entity.TipoIdentificacion1);
+        var tipoDoc = (entity.TipoIdentificacion1 != null) ? 
+            _repository.GetTipoIdentificacion(dbSigo, entity.EmpresaId, (int)entity.TipoIdentificacion1) : null;
 
         string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
         string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
@@ -81,7 +82,10 @@ public class ConsentimientosBL : IConsentimientoService
             AceptoContatoTelefonico = entity.ContactabilidadMovil,
             AceptoContatoEmail = entity.ContactabilidadEmail,
             AceptoContatoSMS = entity.ContactabilidadSms,
-            AceptoContatoWhatsApp = entity.ContactabilidadWhatsapp
+            AceptoContatoWhatsApp = entity.ContactabilidadWhatsapp,
+            TipoPersona = entity.TipoPersona,
+            RazonSocial = entity.RazonSocial,
+            NombreContacto = entity.NombreContacto
         };
 
         DescifrarDatosSensibles(response, entity, entity.EmpresaId);
@@ -92,12 +96,30 @@ public class ConsentimientosBL : IConsentimientoService
     {
         //Guardar datos ANTES de cifrar (para el email)
         string emailDestinatario = entity.EmailCliente;
-        string nombreCompleto = $"{entity.NombreCliente} {entity.ApellidoCliente}".Trim(); 
-        string nombreCliente = entity.NombreCliente;
-        string apellidoCliente = entity.ApellidoCliente;
+
+        string nombreCompleto;
+        string nombreCliente;
+        string apellidoCliente;
+        TipoIdentificacion tipoIdent;
+
+        if (entity.TipoPersona == "N")
+        {
+            nombreCompleto = $"{entity.NombreCliente} {entity.ApellidoCliente}".Trim();
+            nombreCliente = entity.NombreCliente;
+            apellidoCliente = entity.ApellidoCliente;
+            tipoIdent = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1);
+        }
+        else
+        {
+            nombreCompleto = entity.RazonSocial;
+            nombreCliente = entity.NombreContacto;
+            apellidoCliente = string.Empty;
+            tipoIdent = null;
+        }   
+    
         string movilCliente = entity.MovilCliente;
         string identificacionCliente = entity.IdentificacionCliente;
-        string asunto = _configuration.GetValue<string>("Email:SubjectCreate") ?? "Aceptación Terminos y Condiciones";
+        string asunto = _configuration.GetValue<string>("Email:SubjectCreate") ?? "Aceptación Consentimiento";
 
         //Obtener datos de la empresa ANTES del Task.Run (mientras el context está activo)
         var empresa = _empresaRepository.GetById(context, entity.EmpresaId);
@@ -105,8 +127,6 @@ public class ConsentimientosBL : IConsentimientoService
         {
             _logger.LogWarning("No se encontró empresa {EmpresaId}", entity.EmpresaId);
         }
-
-        var tipoIdent = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1);
 
         var tiposRequeridos = new List<string> { ConstantesTyc.tipoTextoSaludoCorreo, ConstantesTyc.tipoTextoTextoAlternoCorreo };
         var textos = _textoService.ObtenerTextosPorEmpresaYTiposComoDiccionario(
@@ -310,7 +330,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (politicas == null || !politicas.Any())
             return resultado;
 
-        var tiposValidos = new[] { "TITULOTRATAMENTODATOS", "TITULOCOMPARTIRDATOS", "TITULOTERMINOSOFERTAS" };
+        var tiposValidos = new[] { "TITULOTRATAMENTODATOS", "TITULOCOMPARTIRDATOS", "TITULOTERMINOSOFERTAS", "TITULOTERMINOSPERSONAJURIDICA" };
 
         foreach (var politica in politicas)
         {
@@ -381,8 +401,8 @@ public class ConsentimientosBL : IConsentimientoService
         var (consentimiento, empresa) = ValidarConsentimientoYEmpresa(context, guid, subdominio);
 
         var textos = _textoRepository.GetByEmpresa(context, empresa.EmpresaId, true);
-        var tipoIdent = _repository.GetTipoIdentificacion(context, 
-            empresa.EmpresaId, (int)consentimiento.TipoIdentificacion1);
+        var tipoIdent = (consentimiento.TipoPersona == "N") ? _repository.GetTipoIdentificacion(context, 
+            empresa.EmpresaId, (int)consentimiento.TipoIdentificacion1) : null;
 
         return new FormularioConsentimientoRS
         {
@@ -484,6 +504,12 @@ public class ConsentimientosBL : IConsentimientoService
         if (!string.IsNullOrEmpty(entity.IdentificacionCliente))
             data.Identificacion = new BaseCifrado(llaveEmpresa).Decrypt256(entity.IdentificacionCliente, true);
 
+        if (!string.IsNullOrEmpty(entity.RazonSocial))
+            data.RazonSocial = new BaseCifrado(llaveEmpresa).Decrypt256(entity.RazonSocial, true);
+
+        if (!string.IsNullOrEmpty(entity.NombreContacto))
+            data.NombreContacto = new BaseCifrado(llaveEmpresa).Decrypt256(entity.NombreContacto, true);
+
         return data;
     }
 
@@ -497,18 +523,18 @@ public class ConsentimientosBL : IConsentimientoService
         var guid = ValidarYExtraerGuid(request.Id);
         var (consentimiento, _) = ValidarConsentimientoYEmpresa(context, guid, request.Subdominio);
 
-        if (!_repository.Exists(context, request.ConsentimientoId))
-            throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
+        //if (!_repository.Exists(context, request.ConsentimientoId))
+         //   throw new InvalidOperationException($"Consentimiento {request.ConsentimientoId} no encontrado");
 
-        if (consentimiento.GuId != request.ConsentimientoId)
-            throw new InvalidOperationException("El ID de consentimiento no coincide con el del formulario");
+        //if (consentimiento.GuId != request.guid)
+        //    throw new InvalidOperationException("El ID de consentimiento no coincide con el del formulario");
 
         ValidarOpcionesContactabilidad(request.OpcionesContactabilidad);
         var politicasDict = ValidarYProcesarPoliticas(context, request.PoliticasAceptadas, consentimiento.EmpresaId);
 
         return _repository.ActualizarAceptaciones(
             context,
-            request.ConsentimientoId,
+            guid,
             request.Dispositivo,
             request.OpcionesContactabilidad,
             politicasDict,
@@ -516,7 +542,6 @@ public class ConsentimientosBL : IConsentimientoService
             request.Estado
         );
     }
-
 
     private class CifradoHelper
     {
@@ -547,11 +572,13 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
-        entity.NombreCliente = cifrador.Cifrar(entity.NombreCliente);
-        entity.ApellidoCliente = cifrador.Cifrar(entity.ApellidoCliente);
+        entity.NombreCliente = (entity.TipoPersona == "N") ? cifrador.Cifrar(entity.NombreCliente) : null;
+        entity.ApellidoCliente = (entity.TipoPersona == "N") ? cifrador.Cifrar(entity.ApellidoCliente) :null;
         entity.EmailCliente = cifrador.Cifrar(entity.EmailCliente);
         entity.IdentificacionCliente = cifrador.Cifrar(entity.IdentificacionCliente);
         entity.MovilCliente = cifrador.Cifrar(entity.MovilCliente);
+        entity.RazonSocial = (entity.TipoPersona == "J") ? cifrador.Cifrar(entity.RazonSocial) : null;
+        entity.NombreContacto = (entity.TipoPersona == "J") ? cifrador.Cifrar(entity.NombreContacto) : null;
     }
 
     private void DescifrarDatosSensibles(ConsentimientoData data, Consentimiento entity, int empresaId)
@@ -563,6 +590,8 @@ public class ConsentimientosBL : IConsentimientoService
         data.Email = cifrador.Descifrar(entity.EmailCliente);
         data.Telefono = cifrador.Descifrar(entity.MovilCliente);
         data.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
+        data.RazonSocial = cifrador.Descifrar(entity.RazonSocial);
+        data.NombreContacto = cifrador.Descifrar(entity.NombreContacto);
     }
 
     // Sobrecarga para ConfirmacionConsentimientoRS
@@ -575,6 +604,9 @@ public class ConsentimientosBL : IConsentimientoService
         response.Email = cifrador.Descifrar(entity.EmailCliente);
         response.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
         response.Telefono = cifrador.Descifrar(entity.MovilCliente);
+        response.RazonSocial = cifrador.Descifrar(entity.RazonSocial);
+        response.NombreContacto = cifrador.Descifrar(entity.NombreContacto);
+       
     }
 
     private Guid ValidarYExtraerGuid(string idEncriptado)
@@ -661,9 +693,10 @@ public class ConsentimientosBL : IConsentimientoService
             var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
             // Descifrar nombres
-            string nombre = cifrador.Descifrar(entity.NombreCliente) ?? string.Empty;
+            string nombre = (entity.TipoPersona == "N") ?
+                cifrador.Descifrar(entity.NombreCliente) : cifrador.Descifrar(entity.RazonSocial);
             string apellido = cifrador.Descifrar(entity.ApellidoCliente) ?? string.Empty;
-            string nombreCompleto = $"{nombre} {apellido}".Trim();
+            string nombreCompleto = (entity.TipoPersona == "N") ?  $"{nombre} {apellido}".Trim() : nombre;
 
             // Generar link encriptado
             string guidConcatenado = entity.GuId.ToString() + entity.GuId.ToString();
@@ -677,7 +710,8 @@ public class ConsentimientosBL : IConsentimientoService
                 FechaCreacion = entity.FechaCreacion,
                 FechaAceptacion = entity.FechaAceptacion,
                 Link = Uri.EscapeDataString(guidEncriptado),
-                Estado = entity.Estado
+                Estado = entity.Estado,
+                TipoPersona = entity.TipoPersona
             });
         }
 
@@ -701,11 +735,15 @@ public class ConsentimientosBL : IConsentimientoService
         {
             var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
-            string nombre = cifrador.Descifrar(entity.NombreCliente) ?? string.Empty;
+            string nombre = (entity.TipoPersona == "N") ? cifrador.Descifrar(entity.NombreCliente) : string.Empty;
+            string razonSocial = (entity.TipoPersona == "J") ?  cifrador.Descifrar(entity.RazonSocial) : string.Empty;
             string apellido = cifrador.Descifrar(entity.ApellidoCliente) ?? string.Empty;
             string email = cifrador.Descifrar(entity.EmailCliente) ?? string.Empty;
             string identificacion = cifrador.Descifrar(entity.IdentificacionCliente) ?? string.Empty;
             string telefono = cifrador.Descifrar(entity.MovilCliente) ?? string.Empty;
+            string nombreContacto = (entity.TipoPersona == "J") ? cifrador.Descifrar(entity.NombreContacto) : string.Empty;
+            string tipoIdentificacion = (entity.TipoIdentificacion1 != null) ?
+                _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1)?.Descripcion : string.Empty;
 
             return new ConsentimientosRS
             {
@@ -713,14 +751,16 @@ public class ConsentimientosBL : IConsentimientoService
                 Nombres = nombre,
                 Apellidos = apellido,
                 Identificacion = identificacion,
-                TipoIdentificacion = _repository.GetTipoIdentificacion(context, entity.EmpresaId, (int)entity.TipoIdentificacion1)?.Descripcion,
+                TipoIdentificacion = tipoIdentificacion,
                 Email = email,
                 Telefono = telefono,
                 FechaCreacion = entity.FechaCreacion,
                 FechaAceptacion = entity.FechaAceptacion,     
                 Medio = entity.MedioAceptacion,
-                Estado = entity.Estado
-               
+                Estado = entity.Estado,
+                TipoPersona = entity.TipoPersona,
+                RazonSocial = razonSocial,
+                NombreContacto = nombreContacto
             };
         }).ToList();
     }

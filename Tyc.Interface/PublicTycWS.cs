@@ -127,7 +127,7 @@ public class PublicTycWS : Service
                 var actualizado = _consentimientoService.ActualizarConsentimiento(dbContext, request);
 
                 if (!actualizado)
-                    throw HttpError.NotFound($"No se pudo actualizar el consentimiento {request.ConsentimientoId}");
+                    throw HttpError.NotFound($"No se pudo actualizar el consentimiento");
 
                 return new ApiResponse<bool>
                 {

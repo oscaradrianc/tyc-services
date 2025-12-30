@@ -50,7 +50,7 @@ public class Program
             LogsSerilog.ConfigureLogging(builder.Configuration, builder.Environment.EnvironmentName);
 
             // === CORS Configuration ===
-            var allowedOrigins = builder.Configuration
+            /*var allowedOrigins = builder.Configuration
                 .GetSection("Cors:AllowedOrigins")
                 .Get<string[]>() ?? [];
 
@@ -63,7 +63,7 @@ public class Program
                         .AllowAnyHeader()
                         .AllowCredentials();
                 });
-            });  
+            });  */
 
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(ConsentimientoMappingConfig).Assembly);
@@ -138,7 +138,7 @@ public class Program
             var app = builder.Build();
 
             // === CORS Middleware - PRIMERO que todo ===
-            app.UseCors("AllowSpecificOrigins");
+            //app.UseCors("AllowSpecificOrigins");
 
             if (app.Environment.IsDevelopment())
             {
@@ -167,6 +167,10 @@ public class Program
         {
             Log.Fatal($"Failed to start {Assembly.GetExecutingAssembly().GetName().Name}", ex);
             throw;
+        }
+        finally
+        {
+            Log.CloseAndFlush();
         }
     }
 }

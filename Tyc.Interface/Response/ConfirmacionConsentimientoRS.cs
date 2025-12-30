@@ -24,5 +24,8 @@ namespace Tyc.Interface.Response
         public string AceptoContatoEmail { get; set; }
         public string AceptoContatoSMS { get; set; }
         public string AceptoContatoWhatsApp { get; set; }
+        public string TipoPersona { get; set; }
+        public string RazonSocial { get; set; }
+        public string NombreContacto { get; set; }
     }
 }

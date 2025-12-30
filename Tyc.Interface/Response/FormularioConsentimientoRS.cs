@@ -1,5 +1,7 @@
-﻿using System;
+﻿using ServiceStack;
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace Tyc.Interface.Response;
 
@@ -46,6 +48,9 @@ public class ConsentimientoData
     public string TipoIdentificacion { get; set; }
     public string Identificacion { get; set; }
     public string Estado { get; set; }
+    public string TipoPersona { get; set; }
+    public string RazonSocial { get; set; }
+    public string NombreContacto { get; set; }
 }
 
 public class TextoData

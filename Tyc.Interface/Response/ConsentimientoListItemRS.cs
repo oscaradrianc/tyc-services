@@ -9,4 +9,5 @@ public class ConsentimientoListItemRS
     public DateTime? FechaAceptacion { get; set; }
     public string Link { get; set; }
     public string Estado { get; set; }
+    public string TipoPersona { get; set; }
 }

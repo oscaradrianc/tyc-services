@@ -22,6 +22,9 @@ namespace Tyc.Interface.Request
         public int? TipoIdentificacion { get; set; }
         public string? Identificacion { get; set; }
         public string? Medio { get; set; }
+        public string TipoPersona { get; set; }
+        public string RazonSocial { get; set; }
+        public string NombreContacto { get; set; }
     }
 
     [Route("/consentimientos/{ConsentimientoId}/firma", "PUT")]
