@@ -3,6 +3,7 @@ using System;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Modelo.Contexto;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Implementacion.Textos.Mappings;
 
@@ -38,5 +39,13 @@ public class TextoMappingConfig : IRegister
             .Map(dest => dest.TextEstado, src => src.Estado)
             .Ignore(dest => dest.EmpresaId)
             .Ignore(dest => dest.TextFechaCreacion);
+
+        config.NewConfig<TextoEmpresaItem, Texto>()
+            .Map(dest => dest.TextText, src => src.Id)
+            .Map(dest => dest.EmpresaId, src => src.EmpresaId)
+            .Map(dest => dest.UsuaUsuario, src => src.UsuarioId)
+            .Map(dest => dest.TextTextoDelosTerminos, src => src.TextoTerminos)
+            .Map(dest => dest.TextEstado, src => src.Estado)
+            .Map(dest => dest.TextTipoTexto, src => src.TipoTexto);
     }
 }

@@ -1,5 +1,7 @@
 ﻿using ServiceStack;
+using System.Collections.Generic;
 using Tyc.Interface.Response;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Interface.Request;
 
@@ -93,4 +95,5 @@ public class UpdateEmpresa : IReturn<EmpresaResponse>
     public string ManejaReceptivo { get; set; }
     public string ManejaMayoreo { get; set; }
     public string ManejaEventos { get; set; }
+    public List<TextoEmpresaItem> Textos { get; set; }
 }

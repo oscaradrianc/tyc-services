@@ -1,6 +1,6 @@
 ﻿using MapsterMapper;
-using ServiceStack.Configuration;
 using System;
+using System.Collections.Generic;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Response;
 using Tyc.Interface.Services;
@@ -12,13 +12,16 @@ namespace Tyc.Implementacion.Empresas;
 public class EmpresasBL : IEmpresaService
 {
     private readonly IEmpresaRepository _repository;
+    private readonly ITextoRepository _textoRepository;
     private readonly IMapper _mapper;
 
     public EmpresasBL(
         IEmpresaRepository EmpresaRepository,
+        ITextoRepository textoRepository,
         IMapper mapper)
     {
         _repository = EmpresaRepository;
+        _textoRepository = textoRepository;
         _mapper = mapper;
     }
 
@@ -48,7 +51,7 @@ public class EmpresasBL : IEmpresaService
         return created.EmpresaId;
     }
 
-    public bool ActualizarEmpresa(TycBaseContext context, Empresa entity)
+    public bool ActualizarEmpresa(TycBaseContext context, Empresa entity, List<Texto> textosEntity)
     {
         // Validar subdominio único (excluyendo la Empresa actual)
         if (_repository.ExisteSubdominio(context, entity.Subdominio, entity.EmpresaId))
@@ -61,6 +64,16 @@ public class EmpresasBL : IEmpresaService
         ValidarEmpresa(entity);
 
         var updated = _repository.Update(context, entity);
+
+        if (updated != null)
+        {
+            //Actualiza los textos de los titulos
+            foreach (var item in textosEntity)
+            {
+                _textoRepository.Update(context, item);                
+            }
+        }
+
         return updated != null;
     }
 

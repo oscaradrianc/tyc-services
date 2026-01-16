@@ -1,6 +1,7 @@
 ﻿using Administrador.ServiceLogs.Auth;
 using MapsterMapper;
 using ServiceStack;
+using System.Collections.Generic;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response;
 using Tyc.Interface.Services;
@@ -69,7 +70,8 @@ public class EmpresasWS : Service
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Empresa>(request);
-            var updated = _EmpresaService.ActualizarEmpresa(dbSigo, entity);
+            var textosEntity = _mapper.Map<List<Texto>>(request.Textos);
+            var updated = _EmpresaService.ActualizarEmpresa(dbSigo, entity, textosEntity);
 
             if (!updated)
                 throw HttpError.NotFound($"Empresa {request.Id} no encontrada");

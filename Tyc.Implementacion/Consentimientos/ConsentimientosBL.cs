@@ -85,7 +85,8 @@ public class ConsentimientosBL : IConsentimientoService
             AceptoContatoWhatsApp = entity.ContactabilidadWhatsapp,
             TipoPersona = entity.TipoPersona,
             RazonSocial = entity.RazonSocial,
-            NombreContacto = entity.NombreContacto
+            NombreContacto = entity.NombreContacto,
+            Referencia = entity.Referencia
         };
 
         DescifrarDatosSensibles(response, entity, entity.EmpresaId);
@@ -177,6 +178,18 @@ public class ConsentimientosBL : IConsentimientoService
         //Cifrar y crear el consentimiento
         CifrarDatosSensibles(entity);
         entity.GuId = Guid.NewGuid();
+
+        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa asi codigompresa || usua_usua
+        //Aca de separa esto para poder conservar la integridad de datos 
+        ReadOnlySpan<char> concatenado = entity.UsuarioId.ToString().AsSpan();
+        ReadOnlySpan<char> prefijo = entity.EmpresaId.ToString().AsSpan();
+
+        if (!concatenado.StartsWith(prefijo))
+            throw new InvalidOperationException("Prefijo inválido");
+
+        int usuarioId = int.Parse(concatenado[prefijo.Length..]);
+
+        entity.UsuarioId = usuarioId;
 
         var created = _repository.CrearConsentimiento(context, entity);
         Guid consentimientoId = created.GuId;
@@ -407,7 +420,7 @@ public class ConsentimientosBL : IConsentimientoService
         return new FormularioConsentimientoRS
         {
             Config = MapearConfigEmpresa(empresa),
-            Consentimiento = MapearConsentimiento(consentimiento, empresa.EmpresaId, tipoIdent.Descripcion),
+            Consentimiento = MapearConsentimiento(consentimiento, empresa.EmpresaId, tipoIdent?.Descripcion),
             Textos = textos.Select(t => new TextoData
             {
                 Id = t.TextText,
@@ -481,10 +494,14 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var data = new ConsentimientoData
         {
-            Id = entity.Id
+            Id = entity.Id,
+            TipoPersona = entity.TipoPersona,
+            RazonSocial = entity.RazonSocial,
+            Referencia = entity.Referencia            
         };
 
         data.TipoIdentificacion = tipoIdentificacion;
+
 
         // Desencriptar datos sensibles
         string llaveEmpresa = empresaId.ToString();

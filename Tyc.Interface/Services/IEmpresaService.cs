@@ -1,4 +1,5 @@
-﻿using Tyc.Interface.Response;
+﻿using System.Collections.Generic;
+using Tyc.Interface.Response;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
@@ -8,5 +9,5 @@ public interface IEmpresaService
 {
     EmpresaResponse ObtenerEmpresaPorId(TycBaseContext context, int id);
     int CrearEmpresa(TycBaseContext context, Empresa entity);
-    bool ActualizarEmpresa(TycBaseContext context, Empresa entity);
+    bool ActualizarEmpresa(TycBaseContext context, Empresa entity, List<Texto> entityTextos);
 }

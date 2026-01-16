@@ -5,6 +5,7 @@ using Devart.Data.Linq.Mapping;
 using Devart.Data.Oracle;
 using Devart.Data.PostgreSql;
 using Tyc.Modelo.Contexto;
+using Usuario = Tyc.Modelo.Contexto.Usuario;
 
 
 namespace Tyc.Modelo
@@ -13,7 +14,7 @@ namespace Tyc.Modelo
     public class TycBaseContext : DataContext
     {
         public TycBaseContext(System.Data.IDbConnection connection) : base(connection) { }
-        public TycBaseContext(string connectionString) : base(connectionString) { }
+        public TycBaseContext(string connectionString) :    base(connectionString) { }
 
         public MotorBD Motor { get; set; }
         public Table<Consentimiento> Consentimientos { get; set; }
@@ -21,6 +22,7 @@ namespace Tyc.Modelo
         public Table<Empresa> Empresas { get; set; }
         public Table<Firma> Firmas { get; set; }
         public Table<TipoIdentificacion> TiposIdentificacion { get; set; }
+        public Table<Usuario> Usuarios { get; set; }
 
     }
 

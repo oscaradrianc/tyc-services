@@ -18,7 +18,8 @@ public class ConsentimientoMappingConfig : IRegister
             .Map(dest => dest.MedioAceptacion, src => src.Medio)
             .Map(dest => dest.TipoPersona, src => src.TipoPersona)
             .Map(dest => dest.RazonSocial, src => src.RazonSocial)
-            .Map(dest => dest.NombreContacto, src => src.NombreContacto);
+            .Map(dest => dest.NombreContacto, src => src.NombreContacto)
+            .Map(dest => dest.Referencia, src => src.Referencia);
     }
 }
 

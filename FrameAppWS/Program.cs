@@ -17,7 +17,9 @@ using ServiceStack;
 using ServiceStack.Redis;
 using solg.lib.settings;
 using System;
+using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Tyc.Implementacion.Consentimientos;
 using Tyc.Implementacion.Consentimientos.Mappings;
 using Tyc.Implementacion.Consentimientos.Repositories;
@@ -48,23 +50,7 @@ public class Program
             builder.Services.Configure<KestrelServerOptions>(builder.Configuration.GetSection("Kestrel"));
 
             LogsSerilog.ConfigureLogging(builder.Configuration, builder.Environment.EnvironmentName);
-
-            // === CORS Configuration ===
-            /*var allowedOrigins = builder.Configuration
-                .GetSection("Cors:AllowedOrigins")
-                .Get<string[]>() ?? [];
-
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowSpecificOrigins", policy =>
-                {
-                    policy.WithOrigins(allowedOrigins)
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials();
-                });
-            });  */
-
+               
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(typeof(ConsentimientoMappingConfig).Assembly);
 
@@ -137,9 +123,7 @@ public class Program
 
             var app = builder.Build();
 
-            // === CORS Middleware - PRIMERO que todo ===
-            //app.UseCors("AllowSpecificOrigins");
-
+        
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

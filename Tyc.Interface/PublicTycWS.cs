@@ -49,7 +49,7 @@ public class PublicTycWS : Service
         settings.SetDbConfig(true);
 
         //var connectionString = settings.GetAppSetting.GetConnection("SIGO"); 
-        string connectionString = settings.GetConnection("Tyc").connectionString;
+        string connectionString = settings.GetConnection("Consentimiento").connectionString;
         var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
 
         using (var dbContext = TycContext.DataContext(connectionString, motorBD))
@@ -117,7 +117,7 @@ public class PublicTycWS : Service
         settings.SetDbConfig(true);
 
         //var connectionString = settings.GetAppSetting.GetConnection("SIGO"); 
-        string connectionString = settings.GetConnection("Tyc").connectionString;
+        string connectionString = settings.GetConnection("Consentimiento").connectionString;
         var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
 
         using (var dbContext = TycContext.DataContext(connectionString, motorBD))

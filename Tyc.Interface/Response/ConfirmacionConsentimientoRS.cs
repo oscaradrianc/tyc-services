@@ -27,5 +27,6 @@ namespace Tyc.Interface.Response
         public string TipoPersona { get; set; }
         public string RazonSocial { get; set; }
         public string NombreContacto { get; set; }
+        public string Referencia { get; set; }
     }
 }

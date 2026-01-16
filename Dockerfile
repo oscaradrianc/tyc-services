@@ -1,45 +1,52 @@
-﻿#FROM mcr.microsoft.com/dotnet/sdk:8.0.100-alpine3.18 AS build
-FROM mcr.microsoft.com/dotnet/sdk:8.0.203-jammy AS build
-WORKDIR /app
+﻿# ETAPA 1: Construcción (Build)
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
 
+# Definimos el argumento para recibir el token
 ARG NUGET_KEY
 
-RUN dotnet nuget add source --username david-gomez-sgsas --password $NUGET_KEY --store-password-in-clear-text --name GitHub "https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json"
+# 1. Agregamos la fuente de GitHub con credenciales
+# Usamos --store-password-in-clear-text porque Linux en Docker no soporta encriptación de credenciales por defecto
+RUN dotnet nuget add source "https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json" \
+    --name "GitHub" \
+    --username "adrian-castro-sgsas" \
+    --password "$NUGET_KEY" \
+    --store-password-in-clear-text
 
-# copy csproj and restore as distinct layers
-COPY *.sln .
+# 2. Copiamos los archivos de proyecto (Capas)
+COPY ["FrameAppWS/FrameAppWS.csproj", "FrameAppWS/"]
+COPY ["Tyc.Interface/Tyc.Interface.csproj", "Tyc.Interface/"]
+COPY ["Tyc.Modelo/Tyc.Modelo.csproj", "Tyc.Modelo/"]
+COPY ["Tyc.Implementacion/Tyc.Implementacion.csproj", "Tyc.Implementacion/"]
+
+# Copiamos archivos de configuración si existen
 COPY Directory.Build.props .
 COPY Directory.Packages.props .
-COPY SIGO.Modelo/*.csproj ./SIGO.Modelo/
-COPY SIGO.Implementacion/*.csproj ./SIGO.Implementacion/
-COPY SIGO.Interface/*.csproj ./SIGO.Interface/
-COPY FrameAppWS/*.csproj ./FrameAppWS/
-RUN dotnet restore -s https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json -s https://api.nuget.org/v3/index.json -s https://nuget.devexpress.com/euIojTxlxKNjWsBOwPNI3GaRWpCF3uPBYyHZkq6B6VKbjcKHcY/api
 
-# copy everything else and build app
-COPY SIGO.Modelo/. ./SIGO.Modelo/
-COPY SIGO.Implementacion/. ./SIGO.Implementacion/
-COPY SIGO.Interface/. ./SIGO.Interface/
+# 3. Restauramos dependencias
+# Nota: No necesitamos repetir las url con -s porque ya agregamos la de GitHub arriba.
+# La de DevExpress la dejamos explícita porque tiene la clave en la URL.
+RUN dotnet restore "FrameAppWS/FrameAppWS.csproj" \
+    -s "https://api.nuget.org/v3/index.json" \
+    -s "https://nuget.devexpress.com/BJhx7YFZYJxRgRyWzgVAnAgxOlEy8rqZxOJuegPYyAiPLjRcGp/api" \
+    -s "https://nuget.pkg.github.com/SolucionesGlobalesSAS/index.json"
 
-COPY FrameAppWS/. ./FrameAppWS/
+# 4. Copiamos el resto del código
+COPY . .
 
-WORKDIR /app/FrameAppWS
+# 5. Publicamos
+WORKDIR "/src/FrameAppWS"
+RUN dotnet publish -c Release -o /app/out
 
-RUN dotnet publish -c Release -o out
-
-#FROM mcr.microsoft.com/dotnet/aspnet:8.0.0-alpine3.18 AS runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0.3-jammy AS runtime
-
-#RUN apk add -U tzdata
-ENV TZ=America/Bogota
-#RUN cp /usr/share/zoneinfo/America/Bogota /etc/localtime
-RUN ln -sf /usr/share/zoneinfo/America/Bogota /etc/localtime
- 
-
-COPY --from=build /app/FrameAppWS/out /app
-
+# ETAPA 2: Ejecución (Runtime)
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
+EXPOSE 8080
 
-HEALTHCHECK CMD curl --fail http://localhost || exit 1
+# Configuración de Zona Horaria (Optimizada para la imagen base de Microsoft)
+ENV TZ=America/Bogota
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+COPY --from=build /app/out .
 
 ENTRYPOINT ["dotnet", "FrameAppWS.dll"]

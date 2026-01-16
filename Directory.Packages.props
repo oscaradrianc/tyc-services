@@ -1,12 +1,12 @@
 <Project>
   <ItemGroup>
     <!--                    Framework libraries                           -->
-    <PackageVersion Include="administradorcore.basehost" Version="4.0.0-beta6" />
-    <PackageVersion Include="administradorcore.implementacion" Version="4.0.0-beta6" />
-    <PackageVersion Include="administradorcore.modelo" Version="4.0.0-beta6" />
+    <PackageVersion Include="administradorcore.basehost" Version="4.0.1-beta4" />
+    <PackageVersion Include="administradorcore.implementacion" Version="4.0.1-beta4" />
+    <PackageVersion Include="administradorcore.modelo" Version="4.0.1-beta4" />
     <PackageVersion Include="administradorcore.servicelogs" Version="4.0.0-beta6" />
     <!--                  Cifrado de datos                           -->
-    <PackageVersion Include="administradorcore.cifrar" Version="4.0.0-beta6" />
+    <PackageVersion Include="administradorcore.cifrar" Version="4.0.1-beta4" />
     <PackageVersion Include="AWSSDK.SimpleEmail" Version="4.0.2.5" />
     <PackageVersion Include="AWSSDK.SimpleEmailV2" Version="4.0.7" />
     <PackageVersion Include="HtmlSanitizer" Version="9.0.889" />
@@ -28,7 +28,7 @@
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="2.0.0" />
     <PackageVersion Include="Serilog.Enrichers.Process" Version="3.0.0" />
     <PackageVersion Include="Serilog.Enrichers.Thread" Version="3.1.0" />
-    <PackageVersion Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.ElasticSearch" Version="9.0.3" />
     <PackageVersion Include="Serilog.Settings.Configuration" Version="9.0.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.0" />

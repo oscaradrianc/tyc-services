@@ -37,7 +37,7 @@ namespace AdministradorCore.BaseHost
             }
             else
             {
-                LoggingService.LevelSwitch.MinimumLevel = LogEventLevel.Error;
+                LoggingService.LevelSwitch.MinimumLevel = LogEventLevel.Information;
             }
             string GenerarNombreIndex()
             {
@@ -58,7 +58,11 @@ namespace AdministradorCore.BaseHost
               .Enrich.WithProperty("ApplicationVersion", Assembly.GetExecutingAssembly().GetName().Version.ToString())
               //.Enrich.WithProcessId()
               .Enrich.WithThreadId()
-              .MinimumLevel.ControlledBy(LoggingService.LevelSwitch);
+              .MinimumLevel.ControlledBy(LoggingService.LevelSwitch)
+              .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}{NewLine}  {Message:lj}{NewLine}{Exception}",
+                theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code
+                );
 
             loggerConfiguration.Filter.With(MultiConditionalFilter.CondicionesLog());
             loggerConfiguration.Filter.ByExcluding(MultiConditionalFilter.ExcluirMensajesNoDeseados());
