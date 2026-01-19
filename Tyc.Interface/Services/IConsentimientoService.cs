@@ -19,7 +19,8 @@ public interface IConsentimientoService
 
     bool ActualizarConsentimiento(TycBaseContext context, ActualizarConsentimiento request);
 
-    List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha, string? estado);
-    List<ConsentimientosRS> ListarConsentimientosPorEmpresa(TycBaseContext context, int empresaId, DateTime? fecha, string? estado);
+    List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha, string? estado, int empresaId);
+    List<ConsentimientosRS> ListarConsentimientosPorEmpresa(TycBaseContext context, int empresaId, 
+        DateTime? fecha, string? estado);
 }
 

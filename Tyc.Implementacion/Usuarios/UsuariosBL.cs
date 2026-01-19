@@ -53,6 +53,7 @@ namespace Tyc.Implementacion.Usuarios
             _configuration = configuration;
         }
 
+        /*
         public static ApiResponse<object> CambiarClave(int idUsuario, string claveActual, string claveNueva)
         {
             ApiResponse<object> response = new ApiResponse<object>();
@@ -186,5 +187,6 @@ namespace Tyc.Implementacion.Usuarios
 
             return "OK";
         }
+        */
     }
 }

@@ -16,7 +16,7 @@ public interface IConsentimientoRepository
     DateTime fechaAceptacion, string estado);
     bool Exists(TycBaseContext context, Guid id);
     TipoIdentificacion GetTipoIdentificacion(TycBaseContext context, int empresaId, int tipoDocumentoId);
-    List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado);
+    List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado, int empresaId);
     List<Consentimiento> ListarPorEmpresa(TycBaseContext context, int empresaId, DateTime? fecha, string? estado);
 }
 

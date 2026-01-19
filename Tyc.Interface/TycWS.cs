@@ -99,7 +99,8 @@ public class TycWS : Service
             var resultado = _consentimientoService.ListarConsentimientos(
                 dbSigo,
                 request.Fecha,
-                request.Estado
+                request.Estado,
+                Convert.ToInt32(userSession.IDEmpresa)
             );
 
             return new ApiResponse<List<ConsentimientoListItemRS>>

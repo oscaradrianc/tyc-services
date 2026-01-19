@@ -1,4 +1,6 @@
-﻿using MapsterMapper;
+﻿using AngleSharp.Dom;
+using Ganss.Xss;
+using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
 using ServiceStack.Configuration;
@@ -12,7 +14,6 @@ using Tyc.Interface.Response;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
-using Ganss.Xss;
 
 namespace Tyc.Implementacion.Textos;
 
@@ -260,7 +261,7 @@ public class TextosBL : ITextoService
         return sanitizer;
     }
 
-    public GuardarListaTextosRS GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId)
+    public GuardarListaTextosRS GuardarLista(TycBaseContext context, List<TextoItem> items, int usuarioId, int empresaId)
     {
         var result = new GuardarListaTextosRS
         {
@@ -269,6 +270,16 @@ public class TextosBL : ITextoService
 
         if (items == null || !items.Any())
             return result;
+
+        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa asi codigompresa || usua_usua
+        //Aca de separa esto para poder conservar la integridad de datos 
+        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+        if (!concatenado.StartsWith(prefijo))
+            throw new InvalidOperationException("Prefijo inválido");
+
+        int usuausaId = int.Parse(concatenado[prefijo.Length..]);
 
         foreach (var item in items)
         {
@@ -289,7 +300,7 @@ public class TextosBL : ITextoService
                         TextTextoDelosTerminos = textoLimpio,
                         TextEstado = item.Estado ?? EstadoTexto.Activo,
                         TextFechaCreacion = DateTime.UtcNow,
-                        UsuaUsuario = usuarioId
+                        UsuaUsuario = usuausaId
                     };
 
                     var created = _repository.Create(context, newEntity);
@@ -305,7 +316,7 @@ public class TextosBL : ITextoService
                         TextTipoTexto = item.TipoTexto,
                         TextTextoDelosTerminos = textoLimpio,
                         TextEstado = item.Estado ?? EstadoTexto.Activo,
-                        UsuaUsuario = usuarioId
+                        UsuaUsuario = usuausaId
                     };
 
                     _repository.Update(context, entity);
@@ -323,7 +334,7 @@ public class TextosBL : ITextoService
                     TextTextoDelosTerminos = textoLimpio,
                     TextEstado = item.Estado ?? EstadoTexto.Activo,
                     TextFechaCreacion = DateTime.UtcNow,
-                    UsuaUsuario = usuarioId
+                    UsuaUsuario = usuausaId
                 };
 
                 var created = _repository.Create(context, entity);

@@ -120,9 +120,9 @@ public class ConsentimientoRepository : IConsentimientoRepository
             .FirstOrDefault(x => x.EmpresaId == empresaId && x.TipoIdentificacionId == tipoDocumentoId);  
     }    
 
-    public List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado)
+    public List<Consentimiento> ListarPorFiltros(TycBaseContext context, DateTime? fecha, string? estado, int empresaId)
     {
-        var query = context.GetTable<Consentimiento>().AsQueryable();
+        var query = context.GetTable<Consentimiento>().Where(c => c.EmpresaId == empresaId).AsQueryable();
 
         // Filtro por fecha de creación (fecha exacta - solo el día)
         if (fecha.HasValue)

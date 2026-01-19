@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response;
@@ -28,7 +29,7 @@ public class TextoMappingConfig : IRegister
             .Map(dest => dest.TextTextoDelosTerminos, src => src.TextoTerminos)
             .Map(dest => dest.TextEstado, src => EstadoTexto.Activo)
             .Map(dest => dest.TextFechaCreacion, src => DateTime.UtcNow)
-            .Ignore(dest => dest.TextText)
+            .Map(dest => dest.UsuaUsuario, src => 0) //Para que dispare valor por defecto
             .Ignore(dest => dest.UsuaUsuario);
 
         // UpdateRequest a Entity

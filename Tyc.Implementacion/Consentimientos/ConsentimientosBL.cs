@@ -694,7 +694,8 @@ public class ConsentimientosBL : IConsentimientoService
 
     // Agregar a ConsentimientosBL.cs
 
-    public List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha, string? estado)
+    public List<ConsentimientoListItemRS> ListarConsentimientos(TycBaseContext context, DateTime? fecha,
+        string? estado, int empresaId)
     {
         // Validar estado si viene con valor
         if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
@@ -702,7 +703,7 @@ public class ConsentimientosBL : IConsentimientoService
             throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
-        var consentimientos = _repository.ListarPorFiltros(context, fecha, estado);
+        var consentimientos = _repository.ListarPorFiltros(context, fecha, estado, empresaId);
         var resultado = new List<ConsentimientoListItemRS>();
 
         foreach (var entity in consentimientos)

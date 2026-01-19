@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\..\SIGO_GIT\General-lib-framework\AdministradorCore.Modelo\AdministradorCore.Modelo.csproj" />
+    <PackageReference Include="administradorcore.modelo" />
   </ItemGroup>
 </Project>

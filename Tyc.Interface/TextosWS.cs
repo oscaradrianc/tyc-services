@@ -255,7 +255,8 @@ public class TextosWS : Service
             var result = _textoService.GuardarLista(
                 dbSigo,
                 request.Items,
-                int.Parse(userSession.IDUsuario));
+                int.Parse(userSession.IDUsuario),
+                Convert.ToInt32(userSession.IDEmpresa));
 
             return new ApiResponse<GuardarListaTextosRS>
             {
