@@ -1,8 +1,9 @@
 ﻿using Mapster;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
 using Tyc.Modelo.Contexto;
 using System;
+using Tyc.Interface.Response.Empresas;
+using DevExpress.Office.Model;
 
 namespace Tyc.Implementacion.Empresas.Mappings;
 
@@ -30,6 +31,7 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaTerminosYCondiciones, src => src.ManejaTerminosYCondiciones)
             .Map(dest => dest.ManejaTycCompartirInfo, src => src.ManejaTycCompartirInfo)
             .Map(dest => dest.ManejaTycRecibirOfertas, src => src.ManejaTycRecibirOfertas)
+            .Map(dest => dest.ManejaTerminosPersonaJuridica, src => src.ManejaTerminosPersonaJuridica)
             .Map(dest => dest.ContactabilidadSms, src => src.ContactabilidadSms)
             .Map(dest => dest.ContactabilidadEmail, src => src.ContactabilidadEmail)
             .Map(dest => dest.ContactabilidadWhatsapp, src => src.ContactabilidadWhatsapp)
@@ -65,6 +67,7 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaTerminosYCondiciones, src => src.ManejaTerminosYCondiciones)
             .Map(dest => dest.ManejaTycCompartirInfo, src => src.ManejaTycCompartirInfo)
             .Map(dest => dest.ManejaTycRecibirOfertas, src => src.ManejaTycRecibirOfertas)
+            .Map(dest => dest.ManejaTerminosPersonaJuridica, src => src.ManejaTerminosPersonaJuridica)
             .Map(dest => dest.ContactabilidadSms, src => src.ContactabilidadSms)
             .Map(dest => dest.ContactabilidadEmail, src => src.ContactabilidadEmail)
             .Map(dest => dest.ContactabilidadWhatsapp, src => src.ContactabilidadWhatsapp)
@@ -101,6 +104,7 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaTerminosYCondiciones, src => src.ManejaTerminosYCondiciones)
             .Map(dest => dest.ManejaTycCompartirInfo, src => src.ManejaTycCompartirInfo)
             .Map(dest => dest.ManejaTycRecibirOfertas, src => src.ManejaTycRecibirOfertas)
+            .Map(dest => dest.ManejaTerminosPersonaJuridica, src => src.ManejaTerminosPersonaJuridica)
             .Map(dest => dest.ContactabilidadSms, src => src.ContactabilidadSms)
             .Map(dest => dest.ContactabilidadEmail, src => src.ContactabilidadEmail)
             .Map(dest => dest.ContactabilidadWhatsapp, src => src.ContactabilidadWhatsapp)

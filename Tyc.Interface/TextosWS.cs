@@ -4,9 +4,11 @@ using ServiceStack;
 using ServiceStack.Host;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Linq;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.General;
+using Tyc.Interface.Response.Textos;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -28,13 +30,13 @@ public class TextosWS : Service
         _mapper = mapper;
     }
 
-    public TextoResponse Get(GetTexto request)
+    public async Task<TextoResponse> Get(GetTexto request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var result = _textoService.ObtenerTextoPorId(dbSigo, request.Id);
+            var result = await _textoService.ObtenerTextoPorIdAsync(dbSigo, request.Id);
 
             if (result == null)
                 throw HttpError.NotFound($"Texto {request.Id} no encontrado");
@@ -43,7 +45,7 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<List<TextoResponse>> Get(ListTextos request)
+    public async Task<ApiResponse<List<TextoResponse>>> Get(ListTextos request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -51,7 +53,7 @@ public class TextosWS : Service
         {
             if (request.EmpresaId.HasValue)
             {
-                var result = _textoService.ObtenerTextosPorEmpresa(
+                var result = await _textoService.ObtenerTextosPorEmpresaAsync(
                     dbSigo, request.EmpresaId.Value, request.SoloActivos);
 
                 return new ApiResponse<List<TextoResponse>>
@@ -71,13 +73,13 @@ public class TextosWS : Service
         }
     }
 
-    public TextoResponse Get(GetTextoByEmpresaYTipo request)
+    public async Task<TextoResponse> Get(GetTextoByEmpresaYTipo request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var result = _textoService.ObtenerTextoPorEmpresaYTipo(
+            var result = await _textoService.ObtenerTextoPorEmpresaYTipoAsync(
                 dbSigo, request.EmpresaId, request.TipoTexto);
 
             if (result == null)
@@ -91,7 +93,7 @@ public class TextosWS : Service
     /// <summary>
     /// GET /textos/Empresa/{EmpresaId}/tipos?tipos=CORREO_SALUDO,CORREO_TEXTOALTERNO
     /// </summary>
-    public ApiResponse<List<TextoResponse>> Get(GetTextosByEmpresaYTipos request)
+    public async Task<ApiResponse<List<TextoResponse>>> Get(GetTextosByEmpresaYTipos request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -114,7 +116,7 @@ public class TextosWS : Service
                 .Where(t => !string.IsNullOrEmpty(t))
                 .ToList();
 
-            var result = _textoService.ObtenerTextosPorEmpresaYTipos(
+            var result = await _textoService.ObtenerTextosPorEmpresaYTiposAsync(
                 dbSigo, request.EmpresaId, tiposList, request.SoloActivos);
 
             return new ApiResponse<List<TextoResponse>>
@@ -130,7 +132,7 @@ public class TextosWS : Service
     /// POST /textos/Empresa/{EmpresaId}/tipos
     /// Body: { "Tipos": ["CORREO_SALUDO", "CORREO_TEXTOALTERNO"], "SoloActivos": true }
     /// </summary>
-    public ApiResponse<List<TextoResponse>> Post(GetTextosByEmpresaYTiposPost request)
+    public async Task<ApiResponse<List<TextoResponse>>> Post(GetTextosByEmpresaYTiposPost request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -146,7 +148,7 @@ public class TextosWS : Service
                 };
             }
 
-            var result = _textoService.ObtenerTextosPorEmpresaYTipos(
+            var result = await _textoService.ObtenerTextosPorEmpresaYTiposAsync(
                 dbSigo, request.EmpresaId, request.Tipos, request.SoloActivos);
 
             return new ApiResponse<List<TextoResponse>>
@@ -158,14 +160,14 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<int> Post(CreateTexto request)
+    public async Task<ApiResponse<int>> Post(CreateTexto request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Texto>(request);
-            var id = _textoService.CrearTexto(dbSigo, entity, int.Parse(userSession.IDUsuario));
+            var id = await _textoService.CrearTextoAsync(dbSigo, entity, int.Parse(userSession.IDUsuario));
 
             return new ApiResponse<int>
             {
@@ -176,14 +178,14 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<bool> Put(UpdateTexto request)
+    public async Task<ApiResponse<bool>> Put(UpdateTexto request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Texto>(request);
-            var updated = _textoService.ActualizarTexto(
+            var updated = await _textoService.ActualizarTextoAsync(
                 dbSigo, entity, int.Parse(userSession.IDUsuario));
 
             if (!updated)
@@ -198,13 +200,13 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<object> Delete(DeleteTexto request)
+    public async Task<ApiResponse<object>> Delete(DeleteTexto request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var deleted = _textoService.EliminarTexto(dbSigo, request.Id);
+            var deleted = await _textoService.EliminarTextoAsync(dbSigo, request.Id);
 
             if (!deleted)
                 throw HttpError.NotFound($"Texto {request.Id} no encontrado");
@@ -217,13 +219,13 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<object> Put(CambiarEstadoTexto request)
+    public async Task<ApiResponse<object>> Put(CambiarEstadoTexto request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var cambiado = _textoService.CambiarEstado(dbSigo, request.Id, request.Estado);
+            var cambiado = await _textoService.CambiarEstadoAsync(dbSigo, request.Id, request.Estado);
 
             if (!cambiado)
                 throw HttpError.NotFound($"Texto {request.Id} no encontrado");
@@ -237,7 +239,7 @@ public class TextosWS : Service
         }
     }
 
-    public ApiResponse<GuardarListaTextosRS> Put(GuardarListaTextos request)
+    public async Task<ApiResponse<GuardarListaTextosRS>> Put(GuardarListaTextos request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -252,7 +254,7 @@ public class TextosWS : Service
                 };
             }
 
-            var result = _textoService.GuardarLista(
+            var result = await _textoService.GuardarListaAsync(
                 dbSigo,
                 request.Items,
                 int.Parse(userSession.IDUsuario),

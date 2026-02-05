@@ -81,8 +81,13 @@ public class ConsentimientosBL : IConsentimientoService
             IdTipoIdentificacion = entity.TipoIdentificacion1,
             TipoIdentificacion = tipoDoc?.Descripcion,
             AceptoTerminos = entity.AceptoTYC,
+            IdTextoAceptoTerminos = entity.TerminosEmpresaId,
             AceptoCompartirInformacion = entity.AceptoCompartirInfo,
+            IdTextoAceptoCompartirInformacion = entity.CompartirInfoId,
             AceptoRecibirOfertas = entity.AceptoRecibirOfertas,
+            IdTextoAceptoRecibirOfertas = entity.RecibirOfertasId,
+            AceptoTerminosPersonaJuridica = entity.AceptoTerminosPersonaJuridica,
+            IdTextoAceptoTerminosPersonaJuridica = entity.TerminosPersonaJuridicaId,
             AceptoContatoTelefonico = entity.ContactabilidadMovil,
             AceptoContatoEmail = entity.ContactabilidadEmail,
             AceptoContatoSMS = entity.ContactabilidadSms,
@@ -308,6 +313,8 @@ public class ConsentimientosBL : IConsentimientoService
 
         // 8. Actualizar consentimiento con aceptaciones
 
+        CifrarDatosSensibles(consentimientoExistente.EmpresaId, request.DatosCliente);
+
         var res = await _repository.ActualizarAceptacionesAsync(
             context,
             request.ConsentimientoId,
@@ -369,7 +376,7 @@ public class ConsentimientosBL : IConsentimientoService
         if (politicas == null || !politicas.Any())
             return resultado;
 
-        var tiposValidos = new[] { "TITULOTRATAMENTODATOS", "TITULOCOMPARTIRDATOS", "TITULOTERMINOSOFERTAS", "TITULOTERMINOSPERSONAJURIDICA" };
+        var tiposValidos = new[] { "POLITICA_TRARAMIENTODATOS", "TERMINOS_COMPARTIRDATOS", "TERMINOS_RECIBIROFERTAS", "TERMINOSPERSONAJURIDICA" };
 
         foreach (var politica in politicas)
         {
@@ -536,6 +543,7 @@ public class ConsentimientosBL : IConsentimientoService
             ManejaTerminosYCondiciones = empresa.ManejaTerminosYCondiciones,
             ManejaTycCompartirInfo = empresa.ManejaTycCompartirInfo,
             ManejaTycRecibirOfertas = empresa.ManejaTycRecibirOfertas,
+            ManejaTerminosPersonaJuridica = empresa.ManejaTerminosPersonaJuridica,
             ContactabilidadSms = empresa.ContactabilidadSms,
             ContactabilidadEmail = empresa.ContactabilidadEmail,
             ContactabilidadWhatsapp = empresa.ContactabilidadWhatsapp,
@@ -819,7 +827,8 @@ public class ConsentimientosBL : IConsentimientoService
         }
 
         // Validar subdominio
-        if (!empresa.Subdominio.Equals(subdominio, StringComparison.OrdinalIgnoreCase))
+        if (!GetSubdomain(empresa.Subdominio).Equals(subdominio, StringComparison.OrdinalIgnoreCase))
+            //if (!empresa.Subdominio.Equals(subdominio, StringComparison.OrdinalIgnoreCase))
         {
             res.Status = false;
             res.Message = "El enlace no corresponde a este sitio";
@@ -1099,6 +1108,13 @@ public class ConsentimientosBL : IConsentimientoService
         
         data.Email = cifrador.Descifrar(entity.EmailCliente);
         data.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
+    }
+
+    string GetSubdomain(string value)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return uri.Host.Split('.')[0];
+        return value;
     }
 }
 

@@ -1,7 +1,8 @@
 ﻿using ServiceStack;
 using System;
 using System.Collections.Generic;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Consentimientos;
+using Tyc.Interface.Response.General;
 using Tyc.Modelo.Tipos;
 
 namespace Tyc.Interface.Request
@@ -15,13 +16,13 @@ namespace Tyc.Interface.Request
     [Route("/consentimientos", "POST")]
     public class ConsentimientoRQ : IReturn<ApiResponse<Guid>>
     {
-        public string? Nombres { get; set; }
-        public string? Apellidos { get; set; }
-        public string? Email { get; set; }
-        public string? Telefono { get; set; }
+        public string Nombres { get; set; }
+        public string Apellidos { get; set; }
+        public string Email { get; set; }
+        public string Telefono { get; set; }
         public int? TipoIdentificacion { get; set; }
-        public string? Identificacion { get; set; }
-        public string? Medio { get; set; }
+        public string Identificacion { get; set; }
+        public string Medio { get; set; }
         public string TipoPersona { get; set; }
         public string RazonSocial { get; set; }
         public string NombreContacto { get; set; }
@@ -38,6 +39,8 @@ namespace Tyc.Interface.Request
         public List<string> OpcionesContactabilidad { get; set; }
         public DateTime FechaFirma { get; set; }
         public string Dispositivo { get; set; }
+        public DatosCliente DatosCliente { get; set; }
+        public string IpClienteFirma { get; set; }
     }
 
     [Route("/consentimientos", "GET")]
@@ -51,23 +54,24 @@ namespace Tyc.Interface.Request
         /// <summary>
         /// Estado: "F" = Firmado (tiene fecha aceptación), "P" = Pendiente (sin fecha aceptación)
         /// </summary>
-        public string? Estado { get; set; }
+        public string Estado { get; set; }
     }
 
     [Route("/consentimientos/empresa/{EmpresaId}", "GET")]
     public class ListarConsentimientosPorEmpresaRQ : IReturn<ApiResponse<List<ConsentimientosRS>>>
     {
-        public int EmpresaId { get; set; }
+        public int? EmpresaId { get; set; }
 
         /// <summary>
         /// Fecha de creación del consentimiento (filtro exacto por día)
         /// </summary>
-        public DateTime? Fecha { get; set; }
+        public DateTime? FechaInicial { get; set; }
+        public DateTime? FechaFinal { get; set; }
 
         /// <summary>
         /// Estado: "F" = Firmado, "P" = Pendiente, "R" = Rechazado
         /// </summary>
-        public string? Estado { get; set; }
+        public string Estado { get; set; }
     }
 
     // En algún servicio de ServiceStack

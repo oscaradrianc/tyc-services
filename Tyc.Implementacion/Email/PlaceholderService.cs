@@ -79,9 +79,9 @@ public class PlaceholderService : IPlaceholderService
         return new Dictionary<string, string>(PlaceholdersDisponibles);
     }
 
-    private static Dictionary<string, string?> CrearDiccionarioValores(PlaceholderData datos)
+    private static Dictionary<string, string> CrearDiccionarioValores(PlaceholderData datos)
     {
-        return new Dictionary<string, string?>
+        return new Dictionary<string, string>
         {
             // Datos del cliente
             { "NombreCliente", datos.Nombre },

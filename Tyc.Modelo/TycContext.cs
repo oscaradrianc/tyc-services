@@ -12,10 +12,9 @@ namespace Tyc.Modelo
 {
 
     public class TycBaseContext : DataContext
-    {
+    {        
         public TycBaseContext(System.Data.IDbConnection connection) : base(connection) { }
         public TycBaseContext(string connectionString) :    base(connectionString) { }
-
         public MotorBD Motor { get; set; }
         public Table<Consentimiento> Consentimientos { get; set; }
         public Table<Texto> Textos { get; set; }
@@ -23,7 +22,7 @@ namespace Tyc.Modelo
         public Table<Firma> Firmas { get; set; }
         public Table<TipoIdentificacion> TiposIdentificacion { get; set; }
         public Table<Usuario> Usuarios { get; set; }
-
+        public Table <VUsuariosSist30> VUsuariosSist30 { get; set; }
     }
 
 
@@ -87,6 +86,5 @@ namespace Tyc.Modelo
 
             return res;
         }
-    }
-    
+    }    
 }

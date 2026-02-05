@@ -66,7 +66,7 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "usua_ultimocambioclave")]
         public DateTime? UsuaUltimoCambioClave { get; set; }
 
-        [Column(Name = "usua_feccre", IsDbGenerated = true)]
+        [Column(Name = "usua_feccre")]
         public DateTime? UsuaFechaCreacion { get; set; }
     }
 }

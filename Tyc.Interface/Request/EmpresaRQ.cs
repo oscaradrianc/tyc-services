@@ -1,6 +1,6 @@
 ﻿using ServiceStack;
 using System.Collections.Generic;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Empresas;
 using Tyc.Modelo.Tipos;
 
 namespace Tyc.Interface.Request;
@@ -37,6 +37,7 @@ public class CreateEmpresa : IReturn<EmpresaResponse>
     public string ManejaTerminosYCondiciones { get; set; }
     public string ManejaTycCompartirInfo { get; set; }
     public string ManejaTycRecibirOfertas { get; set; }
+    public string ManejaTerminosPersonaJuridica { get; set; }
 
     // Configuración de contactabilidad
     public string ContactabilidadSms { get; set; }
@@ -81,6 +82,7 @@ public class UpdateEmpresa : IReturn<EmpresaResponse>
     public string ManejaTerminosYCondiciones { get; set; }
     public string ManejaTycCompartirInfo { get; set; }
     public string ManejaTycRecibirOfertas { get; set; }
+    public string ManejaTerminosPersonaJuridica { get; set; }
     public string ContactabilidadSms { get; set; }
     public string ContactabilidadEmail { get; set; }
     public string ContactabilidadWhatsapp { get; set; }

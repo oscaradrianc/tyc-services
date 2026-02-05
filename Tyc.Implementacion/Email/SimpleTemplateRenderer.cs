@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
@@ -38,7 +39,12 @@ public class SimpleTemplateRenderer : ITemplateRenderer
         if (_templateCache.TryGetValue(templateName, out var cached))
             return cached;
 
-        var templatePath = Path.Combine(_templatesPath, $"{templateName}.html");
+        // Ajuste para rutas relativas en Linux/Windows
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        // Limpiamos la ruta configurada de cualquier / o \ al inicio
+        var cleanTemplatePath = _templatesPath.TrimStart('/', '\\');
+        
+        var templatePath = Path.Combine(basePath, cleanTemplatePath, $"{templateName}.html");
 
         if (!File.Exists(templatePath))
         {
@@ -53,4 +59,5 @@ public class SimpleTemplateRenderer : ITemplateRenderer
 
         return template;
     }
+
 }

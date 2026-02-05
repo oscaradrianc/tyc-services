@@ -33,7 +33,7 @@ namespace Tyc.Modelo.Contexto
         public string MailContactos { get; set; }
 
         [Column(Name = "empr_logoiso9000")]
-        public byte[]? LogoIso9000 { get; set; }
+        public byte[] LogoIso9000 { get; set; }
 
         [Column(Name = "empr_nombrecontacto")]
         public string NombreContacto { get; set; }
@@ -58,6 +58,9 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "empr_manejatycrecibirofertas")]
         public string ManejaTycRecibirOfertas { get; set; }
+
+        [Column(Name = "empr_manejaterminospersonajuridica")]
+        public string ManejaTerminosPersonaJuridica { get; set; }
 
         [Column(Name = "empr_contactabilidassms")]
         public string ContactabilidadSms { get; set; }

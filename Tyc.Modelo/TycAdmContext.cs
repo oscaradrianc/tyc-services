@@ -5,7 +5,6 @@ using Devart.Data.Linq.Mapping;
 using Devart.Data.Oracle;
 using Devart.Data.PostgreSql;
 using Tyc.Modelo.Contexto.Administrador;
-using Tyc.Modelo.Contexto.General;
 
 namespace Tyc.Modelo
 {
@@ -17,8 +16,6 @@ namespace Tyc.Modelo
         public CustomUserSession customUserSession { get; set; }
         public MotorBD Motor { get; set; }
 
-        public Table<UsuarioCorreo> UsuariosCorreo;
-        public Table<RegistroMapcache> RegistrosMapcache;
         public Table<SistEmpresas> SistEmpresas;
         public Table<Contexto.Administrador.ParamEmpresas> ParamEmpresas;
         public Table<TadmBlobs> TadmBlobs;

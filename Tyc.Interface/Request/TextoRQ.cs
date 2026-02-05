@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.General;
+using Tyc.Interface.Response.Textos;
 using static ServiceStack.HttpContextFactory;
 
 namespace Tyc.Interface.Request;

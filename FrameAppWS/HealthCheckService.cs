@@ -22,7 +22,7 @@ public class HealthCheckRS
 
 public class HealthCheckService : Service
 {
-    public IRedisClientsManager Redis { get; set; }
+    public IRedisClientsManager RedisManager { get; set; }
 
     public object Get(HealthCheckRQ request)
     {
@@ -42,7 +42,7 @@ public class HealthCheckService : Service
         // Check Redis
         try
         {
-            using var client = Redis.GetClient();
+            using var client = RedisManager.GetClient();
             client.Ping();
             details["redis"] = "OK";
         }

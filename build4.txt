@@ -1,0 +1,13 @@
+  Determinando los proyectos que se van a restaurar...
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : error NU1008: Los proyectos que usan la administración central de versiones de paquetes no deben definir la versión de los elementos PackageReference, sino la de los elementos de PackageVersion: Devart.Data.Linq.
+  No se pudo restaurar D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj (en 101 ms).
+  Se ha restaurado D:\Solg\ProyectoTyC\tyc-services\Tyc.Modelo\Tyc.Modelo.csproj (en 337 ms).
+  Se ha restaurado D:\Solg\ProyectoTyC\tyc-services\Tyc.Interface\Tyc.Interface.csproj (en 337 ms).
+
+ERROR al compilar.
+
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : error NU1008: Los proyectos que usan la administración central de versiones de paquetes no deben definir la versión de los elementos PackageReference, sino la de los elementos de PackageVersion: Devart.Data.Linq.
+    0 Advertencia(s)
+    1 Errores
+
+Tiempo transcurrido 00:00:01.03

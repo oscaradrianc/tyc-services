@@ -3,11 +3,11 @@ using MapsterMapper;
 using ServiceStack;
 using System.Collections.Generic;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Empresas;
+using Tyc.Interface.Response.General;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
-using static Tyc.Modelo.TycBaseContext;
 
 namespace Tyc.Interface;
 
@@ -71,7 +71,10 @@ public class EmpresasWS : Service
         {
             var entity = _mapper.Map<Empresa>(request);
             var textosEntity = _mapper.Map<List<Texto>>(request.Textos);
-            var updated = _EmpresaService.ActualizarEmpresa(dbSigo, entity, textosEntity);
+
+            int usuarioId = int.Parse(userSession.IDUsuario);
+
+            var updated = _EmpresaService.ActualizarEmpresa(dbSigo, entity, textosEntity, usuarioId);
 
             if (!updated)
                 throw HttpError.NotFound($"Empresa {request.Id} no encontrada");

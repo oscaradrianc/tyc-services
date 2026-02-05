@@ -1,56 +1,212 @@
 ﻿using Administrador.Modelo.Contexto;
+using Administrador.Modelo.Tipos;
+using Administrador.ServiceLogs.Auth;
+using AdministradorCore.Cifrar;
+using General.Utilidades.Cache;
 using MapsterMapper;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using ServiceStack;
+using ServiceStack.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Tyc.Implementacion.Consentimientos;
 using Tyc.Interface.Repositories;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.General;
+using Tyc.Interface.Response.Usuarios;
 using Tyc.Interface.Services;
+using Tyc.Modelo;
+using Tyc.Modelo.Contexto;
 
 namespace Tyc.Implementacion.Usuarios
 {
-    public class UsuariosBL
+    public class UsuariosBL : IUsuarioService
     {
-        private readonly IConsentimientoRepository _repository;
         private readonly IUsuarioRepository _usuarioRepository;
-        private readonly IFirmaRepository _firmaRepository;
-        private readonly ITextoRepository _textoRepository;
-        private readonly IEmpresaRepository _empresaRepository;
-        private readonly IEmailService _emailService;
         private readonly ILogger<UsuariosBL> _logger;
-        private readonly ITextoService _textoService;
-        private readonly ITemplateRenderer _templateRenderer;
-        private readonly IConfiguration _configuration;
 
         public UsuariosBL(
-            IConsentimientoRepository consentimientoRepository,
-            IFirmaRepository firmaRepository,
-            ITextoRepository textoRepository,
-            IEmpresaRepository empresaRepository,
-            IEmailService emailService,
             ILogger<UsuariosBL> logger,
             IMapper mapper,
-            ITextoService textoService,
-            ITemplateRenderer templateRenderer,
-            IConfiguration configuration,
             IUsuarioRepository usuarioRepository)
         {
-            _repository = consentimientoRepository;
+
             _usuarioRepository = usuarioRepository;
-            _firmaRepository = firmaRepository;
-            _textoRepository = textoRepository;
-            _empresaRepository = empresaRepository;
-            _emailService = emailService;
             _logger = logger;
-            _textoService = textoService;
-            _templateRenderer = templateRenderer;
-            _configuration = configuration;
+        }
+
+        public ApiResponse<UsuarioRS> CrearUsuario(TycBaseContext context, Modelo.Contexto.Usuario usuario)
+        {
+            try
+            {
+                //Valida si ya existe el usuario
+                var response = new ApiResponse<UsuarioRS>();
+                var usuarioExistente = _usuarioRepository.GetByLogin(context, usuario.UsuaLogin);
+
+                if (usuarioExistente != null)
+                {
+                    response.Success = false;
+                    response.Mensaje = "Ya existe un usuario con el login ingresado.";                   
+                    return response;
+                }
+
+                var usuarioAdminExistente = _usuarioRepository.GetByLoginAdmin(context, usuario.UsuaLogin);
+
+                if (usuarioAdminExistente != null)
+                {
+                    response.Success = false;
+                    response.Mensaje = "Ya existe un usuario con el login ingresado.";               
+                    return response;
+                }
+
+                usuario.UsuaFechaCreacion = DateTime.Now;
+                usuario.UsuaCambiarClave = "S";
+
+                string claveCifrada = new BaseCifrado(Convert.ToDateTime(usuario.UsuaFechaCreacion).ToString("yyyyMMdd"))
+                    .EncryptSHA512(usuario.UsuaLogin.ToLower());
+
+                usuario.UsuaPassword = claveCifrada;
+                int usuaId = _usuarioRepository.CrearUsuario(context, usuario);
+
+                return new ApiResponse<UsuarioRS>
+                {
+                    Success = true,
+                    Mensaje = "Usuario creado exitosamente.",
+                    Data = new UsuarioRS { UsurioId = usuaId }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear el usuario.");
+                return new ApiResponse<UsuarioRS>
+                {
+                    Success = false,
+                    Mensaje = "Ocurrió un error al crear el usuario."            
+                };
+            }
+        }
+
+        public ChangePasswordRS CambiarClave(TycBaseContext context, ChangePasswordRQ pChangePassUserRQ, CustomUserSession customUserSession, string IP)
+        {
+            var resp = new ChangePasswordRS();
+   
+            try
+            {
+                // Control SQL Injection
+                //Boolean checkInjection = false;
+                //checkInjection = this.SqlCheckInjection(pChangePassUserRQ.Login) ? true : checkInjection;
+                //checkInjection = this.SqlCheckInjection(pChangePassUserRQ.Password) ? true : checkInjection;
+
+                /*if (checkInjection)
+                {
+                    resp.Res = "Error";
+                    resp.ErrorMessage = "Error 010";
+                    return resp;
+                }*/
+
+                /*if (pChangePassUserRQ.Login == null || pChangePassUserRQ.Password == null)
+                {
+                    resp.Res = "Error";
+                    resp.ErrorMessage = "Error 000";
+                    return resp;
+                }*/
+                // Validar Usuario
+                Dictionary<string, object> lsql_User = null;
+                /*lsql_User = dbAdm.ExecuteQuerySingle(string.Format("SELECT usua_login, usua_feccre, usua_nombres, usua_email  FROM tadm_usuarios"
+                        + " WHERE usua_login = '{0}' and usua_estado ='A' and (usua_loginsso='N' or usua_loginsso is NULL)", pChangePassUserRQ.Login));*/
+                var lsqlUser = _usuarioRepository.GetByLogin(context, customUserSession.UserName);
+
+                if (lsqlUser == null)
+                {
+                    resp.Success = false;
+                    resp.Error = "Error 001";
+                    return resp;
+                }
+
+
+                string newPassword = pChangePassUserRQ.NewPassword?.Trim() ?? "";
+                string login = lsqlUser.UsuaLogin?.ToString()?.Trim() ?? "";
+                string nombres = lsqlUser.UsuaNombre?.ToString()?.Trim() ?? "";
+                string email = lsqlUser.UsuaEmail?.ToString()?.Trim() ?? "";
+
+                string passLower = newPassword.ToLower();
+
+                // Verificar similitud con login, nombre o email
+                if (!string.IsNullOrEmpty(login) && passLower.Contains(login.ToLower()))
+                {
+                    resp.Success = false;
+                    resp.Error = "La contraseña no puede contener el nombre de usuario.";
+                    return resp;
+                }
+
+                if (!string.IsNullOrEmpty(nombres) && passLower.Contains(nombres.ToLower()))
+                {
+                    resp.Success = false;
+                    resp.Error = "La contraseña no puede contener el nombre del usuario.";
+                    return resp;
+                }
+
+                if (!string.IsNullOrEmpty(email))
+                {
+                    string emailUser = email.Split('@')[0]; // Solo la parte antes del @
+                    if (passLower.Contains(emailUser.ToLower()))
+                    {
+                        resp.Success = false;
+                        resp.Error = "La contraseña no puede contener el correo del usuario.";
+                        return resp;
+                    }
+                }
+
+                // Genera Guid
+                var Token = Guid.NewGuid().ToString();
+
+                // Password encriptado
+                string passwordR = new BaseCifrado(Convert.ToDateTime(lsqlUser.UsuaFechaCreacion).ToString("yyyyMMdd")).EncryptSHA512(pChangePassUserRQ.NewPassword);
+
+                // Se Guarda el registro en bd
+                /*var sqlQuery = string.Format("INSERT INTO tadm_usuacambio (" +
+                    "reco_reco," +
+                    "usua_login," +
+                    "reco_fecha," +
+                    "reco_estado," +
+                    "reco_nuevaclave, " +
+                    "reco_ip," +
+                    "reco_vigencia)" +
+                    "VALUES (" +
+                    "'{0}'," +
+                    "'{1}'," +
+                    "CURRENT_TIMESTAMP," +
+                    "'C'," +
+                    "'{2}'," +
+                    "'{3}'," +
+                    "'{4}')",
+                Token, pChangePassUserRQ.Login, passwordR, IP, vigencia);
+                dbAdm.ExecuteQuerySingle(sqlQuery);*/
+
+                ChangePasswordRQ pass = new ChangePasswordRQ();
+                pass.NewPassword = pChangePassUserRQ.NewPassword;
+                //ChangePasswordRS userChange = new ServiceAuth(appSettings, _logger).ChangePasswordRQ(dbAdm.customUserSession, pass);
+                int userChange = _usuarioRepository.CambiarClave(context, lsqlUser.UsuaUsua, passwordR);
+
+                if (userChange == 0)
+                {
+                    resp.Success = false;
+                    resp.Error = "Error al cambiar la contraseña";
+                }
+                else
+                {
+                    LimpiarCacheRQ limpiarCacheRQ = new LimpiarCacheRQ();
+                    List<string> res = HostContext.Cache.LimpiarCache(limpiarCacheRQ, customUserSession);                  
+                }
+
+                resp.Success = true;
+                resp.Error = "";
+                return resp;
+            }
+            catch (Exception e)
+            {
+                resp.Success = false;
+                resp.Error = e.Message;
+                return resp;
+            }
         }
 
         /*
@@ -188,5 +344,60 @@ namespace Tyc.Implementacion.Usuarios
             return "OK";
         }
         */
+
+        public Boolean SqlCheckInjection(string text)
+        {
+            bool isSQLInjection = false;
+
+            if (String.IsNullOrWhiteSpace(text))
+            {
+                return isSQLInjection;
+            }
+            ;
+
+            string[] sqlCheckList = {
+            "--",
+            ";--",
+            ";",
+            "/*",
+            "*/",
+            "@@",
+            "@",
+            "char",
+            "nchar",
+            "varchar",
+            "nvarchar",
+            "alter",
+            "begin",
+            "create",
+            "cursor",
+            "declare",
+            "delete",
+            "drop",
+            "exec",
+            "execute",
+            "fetch",
+            "insert",
+            "kill",
+            "select",
+            "sys",
+            "sysobjects",
+            "syscolumns",
+            "table",
+            "update"
+        };
+
+            string CheckString = text.Replace("'", "''");
+
+            for (int i = 0; i <= sqlCheckList.Length - 1; i++)
+            {
+                if ((CheckString.IndexOf(sqlCheckList[i], StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    isSQLInjection = true;
+                }
+            }
+
+            return isSQLInjection;
+        }
     }
 }

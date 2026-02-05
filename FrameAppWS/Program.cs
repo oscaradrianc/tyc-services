@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,9 +16,7 @@ using ServiceStack;
 using ServiceStack.Redis;
 using solg.lib.settings;
 using System;
-using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using Tyc.Implementacion.Consentimientos;
 using Tyc.Implementacion.Consentimientos.Mappings;
 using Tyc.Implementacion.Consentimientos.Repositories;
@@ -27,8 +24,11 @@ using Tyc.Implementacion.Email;
 using Tyc.Implementacion.Empresas;
 using Tyc.Implementacion.Empresas.Repositories;
 using Tyc.Implementacion.Firmas.Repositories;
+using Tyc.Implementacion.Pdf;
 using Tyc.Implementacion.Textos;
 using Tyc.Implementacion.Textos.Repositories;
+using Tyc.Implementacion.Usuarios;
+using Tyc.Implementacion.Usuarios.Repositories;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Services;
@@ -79,10 +79,13 @@ public class Program
             builder.Services.AddScoped<ITextoRepository, TextoRepository>();
             builder.Services.AddScoped<IEmpresaRepository, EmpresaRepository>();
             builder.Services.AddScoped<IFirmaRepository, FirmaRepository>();
+            builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
             builder.Services.AddScoped<ITextoService, TextosBL>();
             builder.Services.AddScoped<IEmpresaService, EmpresasBL>();
+            builder.Services.AddScoped<IUsuarioService, UsuariosBL>();
+            builder.Services.AddScoped<IPdfService, PdfService>();
 
             builder.Services.AddLogging(logging =>
             {

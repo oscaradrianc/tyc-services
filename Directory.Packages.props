@@ -1,17 +1,19 @@
 <Project>
   <ItemGroup>
     <!--                    Framework libraries                           -->
-    <PackageVersion Include="administradorcore.basehost" Version="4.0.1-beta1" />
-    <PackageVersion Include="administradorcore.implementacion" Version="4.0.1-beta1" />
-    <PackageVersion Include="administradorcore.modelo" Version="4.0.1-beta1" />
-    <PackageVersion Include="administradorcore.servicelogs" Version="4.0.1-beta1" />
+    <PackageVersion Include="administradorcore.basehost" Version="4.0.2-beta4" />
+    <PackageVersion Include="administradorcore.implementacion" Version="4.0.2-beta4" />
+    <PackageVersion Include="administradorcore.modelo" Version="4.0.2-beta4" />
+    <PackageVersion Include="administradorcore.servicelogs" Version="4.0.2-beta4" />
     <!--                  Cifrado de datos                           -->
-    <PackageVersion Include="administradorcore.cifrar" Version="4.0.1-beta1" />
+    <PackageVersion Include="administradorcore.cifrar" Version="4.0.2-beta1" />
     <PackageVersion Include="AWSSDK.SimpleEmail" Version="4.0.2.5" />
     <PackageVersion Include="AWSSDK.SimpleEmailV2" Version="4.0.7" />
+    <PackageVersion Include="HtmlAgilityPack" Version="1.12.4" />
     <PackageVersion Include="HtmlSanitizer" Version="9.0.889" />
     <PackageVersion Include="Mapster" Version="7.4.0" />
     <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1" />
+    <PackageVersion Include="QuestPDF" Version="2025.12.3.1-alpha2" />
     <PackageVersion Include="Scrutor" Version="6.1.0" />
     <!--                                                       -->
     <PackageVersion Include="utilidadescore" Version="4.0.0-beta6" />
@@ -21,6 +23,7 @@
     <PackageVersion Include="DevExpress.Document.Processor.es" Version="[25.1.6]" />
     <PackageVersion Include="DevExpress.Drawing.Skia.es" Version="[25.1.6]" />
     <PackageVersion Include="DevExpress.Pdf.SkiaRenderer.es" Version="[25.1.6]" />
+    <PackageVersion Include="Devart.Data.Linq" Version="5.2.290" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Serilog" Version="4.2.0" />

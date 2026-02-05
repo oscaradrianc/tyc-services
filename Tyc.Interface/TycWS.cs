@@ -2,11 +2,14 @@
 using MapsterMapper;
 using ServiceStack;
 using ServiceStack.Host;
+using ServiceStack.Web;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Consentimientos;
+using Tyc.Interface.Response.General;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -19,23 +22,26 @@ public class TycWS : Service
 {
     private readonly IMapper _mapper;
     private readonly IConsentimientoService _consentimientoService;
+    private readonly IPdfService _pdfService;
 
     public TycWS(
         IConsentimientoService consentimientoService,
         IConsentimientoRepository repository,
-        IMapper mapper)
+        IMapper mapper,
+        IPdfService pdfService)
     {
         _mapper = mapper;
         _consentimientoService = consentimientoService;
+        _pdfService = pdfService;
     }
 
-    public ApiResponse<ConfirmacionConsentimientoRS> Get(GetConsentimiento request)
+    public async Task<ApiResponse<ConfirmacionConsentimientoRS>> Get(GetConsentimiento request)
     {        
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var result = _consentimientoService.ObtenerConfirmacionConsentimiento(dbSigo, request.Id);
+            var result = await _consentimientoService.ObtenerConfirmacionConsentimientoAsync(dbSigo, request.Id);
 
             if (result == null)
                 throw HttpError.NotFound($"Consentimiento {request.Id} no encontrado");
@@ -49,7 +55,7 @@ public class TycWS : Service
         }
     }
 
-    public ApiResponse<Guid> Post(ConsentimientoRQ request)
+    public async Task<ApiResponse<Guid>> Post(ConsentimientoRQ request)
     {       
         // UserSession va por defecto           
         CustomUserSession userSession = SessionAs<CustomUserSession>();
@@ -60,7 +66,7 @@ public class TycWS : Service
             entity.UsuarioId = int.Parse(userSession.IDUsuario);
             entity.EmpresaId = (int)userSession.IDEmpresa; 
 
-            var id = _consentimientoService.CrearConsentimiento(dbSigo, entity);
+            var id = await _consentimientoService.CrearConsentimientoAsync(dbSigo, entity);
 
             return new ApiResponse<Guid>
             {
@@ -72,31 +78,35 @@ public class TycWS : Service
 
     }
 
-    public ApiResponse<bool> Put(ActualizarConsentimientoConFirma request)
+    public async Task<ApiResponse<bool>> Put(ActualizarConsentimientoConFirma request)
     {
+        string clientIp = Request.UserHostAddress;
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var actualizado = _consentimientoService.ActualizarConsentimientoConFirma(dbSigo, request);
+            request.IpClienteFirma = clientIp;
+            var res = await _consentimientoService.ActualizarConsentimientoConFirmaAsync(dbSigo, request);
 
-            if (!actualizado)
-                throw HttpError.NotFound($"No se pudo actualizar el consentimiento {request.ConsentimientoId}");
+            if (!res.Status)
+            {
+                throw HttpError.Validation("ValidacionConsentimiento", res.Message, null);
+            }
 
             return new ApiResponse<bool>
             {
-                Success = actualizado,
+                Success = res.Status,
                 Mensaje = "Consentimiento actualizado con firma exitosamente"
             };
         }
     }
 
-    public ApiResponse<List<ConsentimientoListItemRS>> Get(ListarConsentimientosRQ request)
+    public async Task<ApiResponse<List<ConsentimientoListItemRS>>> Get(ListarConsentimientosRQ request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var resultado = _consentimientoService.ListarConsentimientos(
+            var resultado = await _consentimientoService.ListarConsentimientosAsync(
                 dbSigo,
                 request.Fecha,
                 request.Estado,
@@ -112,16 +122,17 @@ public class TycWS : Service
         }
     }
 
-    public ApiResponse<List<ConsentimientosRS>> Get(ListarConsentimientosPorEmpresaRQ request)
+    public async Task<ApiResponse<List<ConsentimientosRS>>> Get(ListarConsentimientosPorEmpresaRQ request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            var resultado = _consentimientoService.ListarConsentimientosPorEmpresa(
+            var resultado = await _consentimientoService.ListarConsentimientosPorEmpresaAsync(
                 dbSigo,
                 request.EmpresaId,
-                request.Fecha,
+                request.FechaInicial,
+                request.FechaFinal,
                 request.Estado
             );
 
@@ -130,6 +141,29 @@ public class TycWS : Service
                 Data = resultado,
                 Mensaje = $"Se encontraron {resultado.Count} consentimientos",
                 Success = true
+            };
+        }
+    }
+
+    // Agregar en TycWS.cs
+    public async Task<IHttpResult> Get(GetConsentimientoPdf request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var pdfBytes = await _pdfService.GenerarConsentimientoPdfAsync(
+                dbSigo,
+                request.ConsentimientoId,
+                request.TextoId);
+
+            return new HttpResult(pdfBytes, "application/pdf")
+            {
+                Headers =
+            {
+                // inline = ver en navegador, attachment = forzar descarga
+                ["Content-Disposition"] = $"inline; filename=consentimiento_{request.ConsentimientoId}.pdf"
+            }
             };
         }
     }

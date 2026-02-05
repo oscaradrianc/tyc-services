@@ -2,7 +2,7 @@
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Textos;
 using Tyc.Modelo.Contexto;
 using Tyc.Modelo.Tipos;
 

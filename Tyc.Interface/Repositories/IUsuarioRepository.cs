@@ -11,5 +11,9 @@ namespace Tyc.Interface.Repositories
     public interface IUsuarioRepository
     {
         Usuario GetById(TycBaseContext context, int id);
+        Usuario GetByLogin(TycBaseContext context, string login);
+        VUsuariosSist30 GetByLoginAdmin(TycBaseContext context, string login);
+        int CrearUsuario(TycBaseContext context, Usuario usuario);
+        int CambiarClave(TycBaseContext context, int usuarioId, string nuevaClave);
     }
 }

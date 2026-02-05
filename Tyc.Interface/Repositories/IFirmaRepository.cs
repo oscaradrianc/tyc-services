@@ -13,4 +13,10 @@ public interface IFirmaRepository
     Firma GetByConsentimiento(TycBaseContext context, int consentimientoId);
     bool ExisteFirmaParaConsentimiento(TycBaseContext context, int consentimientoId);
     bool Eliminar(TycBaseContext context, int consentimientoId);
+
+    // Async Methods
+    Task<Firma> CreateAsync(TycBaseContext context, Firma entity);
+    Task<Firma> GetByConsentimientoAsync(TycBaseContext context, int consentimientoId);
+    Task<bool> ExisteFirmaParaConsentimientoAsync(TycBaseContext context, int consentimientoId);
+    Task<bool> EliminarAsync(TycBaseContext context, int consentimientoId);
 }

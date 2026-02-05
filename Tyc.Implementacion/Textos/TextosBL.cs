@@ -10,10 +10,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Textos;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
+using System.Threading.Tasks;
 
 namespace Tyc.Implementacion.Textos;
 
@@ -338,6 +339,185 @@ public class TextosBL : ITextoService
                 };
 
                 var created = _repository.Create(context, entity);
+                result.Insertados++;
+                result.IdsAfectados.Add(created.TextText);
+            }
+        }
+
+        return result;
+    }
+    public async Task<TextoResponse> ObtenerTextoPorIdAsync(TycBaseContext context, int id)
+    {
+        var entity = await _repository.GetByIdAsync(context, id);
+        return entity != null ? _mapper.Map<TextoResponse>(entity) : null;
+    }
+
+    public async Task<List<TextoResponse>> ObtenerTextosPorEmpresaAsync(TycBaseContext context, int EmpresaId, bool soloActivos = true)
+    {
+        var entities = await _repository.GetByEmpresaAsync(context, EmpresaId, soloActivos);
+        return _mapper.Map<List<TextoResponse>>(entities);
+    }
+
+    public async Task<TextoResponse> ObtenerTextoPorEmpresaYTipoAsync(TycBaseContext context, int EmpresaId, string tipoTexto)
+    {
+        var entity = await _repository.GetByEmpresaYTipoAsync(context, EmpresaId, tipoTexto);
+        return entity != null ? _mapper.Map<TextoResponse>(entity) : null;
+    }
+
+    public async Task<List<TextoResponse>> ObtenerTextosPorEmpresaYTiposAsync(TycBaseContext context, int EmpresaId, List<string> tiposTexto, bool soloActivos = true)
+    {
+       if (tiposTexto == null || !tiposTexto.Any())
+            return new List<TextoResponse>();
+
+        var entities = await _repository.GetByEmpresaYTiposAsync(context, EmpresaId, tiposTexto, soloActivos);
+        return _mapper.Map<List<TextoResponse>>(entities);
+    }
+
+    public async Task<Dictionary<string, TextoResponse>> ObtenerTextosPorEmpresaYTiposComoDiccionarioAsync(TycBaseContext context, int EmpresaId, List<string> tiposTexto, bool soloActivos = true)
+    {
+        var textos = await ObtenerTextosPorEmpresaYTiposAsync(context, EmpresaId, tiposTexto, soloActivos);
+
+        return textos.ToDictionary(
+            t => t.TipoTexto,
+            t => t,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<int> CrearTextoAsync(TycBaseContext context, Texto entity, int usuarioId)
+    {
+         // Validar que no exista otro texto con la misma Empresa y tipo
+        /*if (await _repository.ExisteTextoParaEmpresaYTipoAsync(context, entity.EmpresaId, entity.TextTipoTexto))
+        {
+            throw new InvalidOperationException(
+                $"Ya existe un texto de tipo '{entity.TextTipoTexto}' para esta Empresa");
+        }*/
+
+        // Validar tipo de texto
+        // ValidarTipoTexto(entity.TextTipoTexto);
+
+        entity.UsuaUsuario = usuarioId;
+        entity.TextEstado = EstadoTexto.Activo;
+        entity.TextFechaCreacion = DateTime.UtcNow;
+
+        var created = await _repository.CreateAsync(context, entity);
+        return created.TextText;
+    }
+
+    public async Task<bool> ActualizarTextoAsync(TycBaseContext context, Texto entity, int usuarioId)
+    {
+         // Validar que no exista otro texto con la misma Empresa y tipo (excluyendo el actual)
+        /*if (await _repository.ExisteTextoParaEmpresaYTipoAsync(
+            context, entity.EmpresaId, entity.TextTipoTexto, entity.TextText))
+        {
+            throw new InvalidOperationException(
+                $"Ya existe otro texto de tipo '{entity.TextTipoTexto}' para esta Empresa");
+        }*/
+
+        // Validar tipo de texto
+        // ValidarTipoTexto(entity.TextTipoTexto);
+
+        entity.UsuaUsuario = usuarioId;
+
+        var updated = await _repository.UpdateAsync(context, entity);
+        return updated != null;
+    }
+
+    public async Task<bool> EliminarTextoAsync(TycBaseContext context, int id)
+    {
+        // return await _repository.DeleteAsync(context, id);
+        return await _repository.CambiarEstadoAsync(context, id, EstadoTexto.Inactivo); // Soft delete default
+    }
+
+    public async Task<bool> CambiarEstadoAsync(TycBaseContext context, int id, string estado)
+    {
+        if (estado != EstadoTexto.Activo && estado != EstadoTexto.Inactivo)
+        {
+            throw new ArgumentException($"Estado inválido: {estado}");
+        }
+
+        return await _repository.CambiarEstadoAsync(context, id, estado);
+    }
+
+    public async Task<GuardarListaTextosRS> GuardarListaAsync(TycBaseContext context, List<TextoItem> items, int usuarioId, int empresaId)
+    {
+        var result = new GuardarListaTextosRS
+        {
+            IdsAfectados = new List<int>()
+        };
+
+        if (items == null || !items.Any())
+            return result;
+
+        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+        if (!concatenado.StartsWith(prefijo))
+            throw new InvalidOperationException("Prefijo inválido");
+
+        int usuausaId = int.Parse(concatenado[prefijo.Length..]);
+
+        foreach (var item in items)
+        {
+            var textoLimpio = _htmlSanitizer.Sanitize(item.TextoTerminos ?? string.Empty);
+            bool existeRegistro = false;
+            
+            if (item.Id.HasValue && item.Id.Value > 0)
+            {
+                existeRegistro = await _repository.ExistsAsync(context, item.Id.Value);
+            }
+
+            if (existeRegistro)
+            {
+                if (item.Versionar)
+                {
+                    // Modo versionado: inactivar actual + insertar nuevo
+                    await _repository.CambiarEstadoAsync(context, item.Id.Value, EstadoTexto.Inactivo);
+
+                    var newEntity = new Texto
+                    {
+                        EmpresaId = item.EmpresaId,
+                        TextTipoTexto = item.TipoTexto,
+                        TextTextoDelosTerminos = textoLimpio,
+                        TextEstado = item.Estado ?? EstadoTexto.Activo,
+                        TextFechaCreacion = DateTime.UtcNow,
+                        UsuaUsuario = usuausaId
+                    };
+
+                    var created = await _repository.CreateAsync(context, newEntity);
+                    result.Versionados++;
+                    result.IdsAfectados.Add(created.TextText);
+                }
+                else
+                {
+                    // Modo normal: actualizar existente
+                    var entity = new Texto
+                    {
+                        TextText = item.Id.Value,
+                        TextTipoTexto = item.TipoTexto,
+                        TextTextoDelosTerminos = textoLimpio,
+                        TextEstado = item.Estado ?? EstadoTexto.Activo,
+                        UsuaUsuario = usuausaId
+                    };
+
+                    await _repository.UpdateAsync(context, entity);
+                    result.Actualizados++;
+                    result.IdsAfectados.Add(item.Id.Value);
+                }
+            }
+            else
+            {
+                // Insertar nuevo
+                var entity = new Texto
+                {
+                    EmpresaId = item.EmpresaId,
+                    TextTipoTexto = item.TipoTexto,
+                    TextTextoDelosTerminos = textoLimpio,
+                    TextEstado = item.Estado ?? EstadoTexto.Activo,
+                    TextFechaCreacion = DateTime.UtcNow,
+                    UsuaUsuario = usuausaId
+                };
+
+                var created = await _repository.CreateAsync(context, entity);
                 result.Insertados++;
                 result.IdsAfectados.Add(created.TextText);
             }

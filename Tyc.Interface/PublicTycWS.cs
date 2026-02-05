@@ -1,15 +1,15 @@
-﻿using Administrador.ServiceLogs.Auth;
+﻿using System;
+using System.Net;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
-using System;
-using System.Net;
 using Tyc.Interface.Request;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Consentimientos;
+using Tyc.Interface.Response.General;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using static Tyc.Interface.Request.ConsentimientoPublicoRQ;
-using static Tyc.Modelo.TycBaseContext;
 
 namespace Tyc.Interface;
 
@@ -30,7 +30,7 @@ public class PublicTycWS : Service
         _logger = logger;
     }
 
-    public ApiResponse<FormularioConsentimientoRS> Get(ObtenerFormularioConsentimiento request)
+    public async Task<ApiResponse<FormularioConsentimientoRS>> Get(ObtenerFormularioConsentimiento request)
     {
         string clientIp = Request.UserHostAddress;        
 
@@ -56,20 +56,17 @@ public class PublicTycWS : Service
         {
             try
             {
-                var result = _consentimientoService.ObtenerFormularioConsentimiento(
+                var result = await _consentimientoService.ObtenerFormularioConsentimientoAsync(
                     dbContext,
                     request.Subdominio,
                     request.Id
                 );
 
-                // 3. Log de acceso exitoso
-                _logger.LogInformation($"Formulario accedido - IP: {clientIp}, Consent: {result.Consentimiento.Id}");
-
                 return new ApiResponse<FormularioConsentimientoRS>
                 {
                     Data = result,
-                    Mensaje = "Formulario obtenido exitosamente",
-                    Success = true
+                    Mensaje = result.MensajeError,
+                    Success = result.EsValido
                 };
             }
             catch (Exception ex)
@@ -98,7 +95,7 @@ public class PublicTycWS : Service
         return true;
     }
 
-    public ApiResponse<bool> Put(ActualizarConsentimiento request)
+    public async Task<ApiResponse<bool>> Put(ActualizarConsentimiento request)
     {
         string clientIp = Request.UserHostAddress;
 
@@ -123,16 +120,20 @@ public class PublicTycWS : Service
         using (var dbContext = TycContext.DataContext(connectionString, motorBD))
         {
             try
-            {                
-                var actualizado = _consentimientoService.ActualizarConsentimiento(dbContext, request);
+            {
+                request.IpClienteFirma = clientIp;
 
-                if (!actualizado)
-                    throw HttpError.NotFound($"No se pudo actualizar el consentimiento");
+                var res = await _consentimientoService.ActualizarConsentimientoAsync(dbContext, request);
+
+                if (!res.Status)
+                {
+                    throw HttpError.Validation("Validación Consentimiento", $"No se pudo actualizar el consentimiento", string.Empty);
+                }
 
                 return new ApiResponse<bool>
                 {
-                    Success = actualizado,
-                    Mensaje = "Consentimiento actualizado con firma exitosamente"
+                    Success = res.Status,
+                    Mensaje = res.Message
                 };
             }
             catch (Exception ex)

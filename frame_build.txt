@@ -1,0 +1,22 @@
+  Determinando los proyectos que se van a restaurar...
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió. [D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj]
+D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+  Se ha restaurado D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj (en 650 ms).
+  3 de 4 proyectos están actualizados para la restauración.
+D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+  Tyc.Modelo -> D:\Solg\ProyectoTyC\tyc-services\Tyc.Modelo\bin\Debug\net9.0\Tyc.Modelo.dll
+  Tyc.Interface -> D:\Solg\ProyectoTyC\tyc-services\Tyc.Interface\bin\Debug\net9.0\Tyc.Interface.dll
+  Tyc.Implementacion -> D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\bin\Debug\net9.0\Tyc.Implementacion.dll
+  FrameAppWS -> D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\bin\Debug\net9.0\FrameAppWS.dll
+
+Compilación correcta.
+
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió. [D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj]
+D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+D:\Solg\ProyectoTyC\tyc-services\FrameAppWS\FrameAppWS.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+D:\Solg\ProyectoTyC\tyc-services\Tyc.Implementacion\Tyc.Implementacion.csproj : warning NU1608: Se detectó una versión del paquete fuera de la restricción de dependencia: AWSSDK.SecretsManager 3.3.103 requiere AWSSDK.Core (>= 3.3.107.23 && < 3.4.0), pero la versión AWSSDK.Core 4.0.3.3 ya se resolvió.
+    4 Advertencia(s)
+    0 Errores
+
+Tiempo transcurrido 00:00:03.37

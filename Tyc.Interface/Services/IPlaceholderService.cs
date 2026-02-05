@@ -30,21 +30,21 @@ public interface IPlaceholderService
 public class PlaceholderData
 {
     // Datos del cliente (ya descifrados)
-    public string? Nombre { get; set; }
-    public string? Apellido { get; set; }
-    public string? NombreCompleto => $"{Nombre} {Apellido}".Trim();
-    public string? Email { get; set; }
-    public string? Movil { get; set; }
-    public string? Identificacion { get; set; }
-    public string? TipoIdentificacion { get; set; }
+    public string Nombre { get; set; }
+    public string Apellido { get; set; }
+    public string NombreCompleto => $"{Nombre} {Apellido}".Trim();
+    public string Email { get; set; }
+    public string Movil { get; set; }
+    public string Identificacion { get; set; }
+    public string TipoIdentificacion { get; set; }
     public DateTime? FechaCreacion { get; set; }
 
     // Datos de la empresa
-    public string? NombreEmpresa { get; set; }
-    public string? TelefonoEmpresa { get; set; }
-    public string? EmailEmpresa { get; set; }
-    public string? DireccionEmpresa { get; set; }
+    public string NombreEmpresa { get; set; }
+    public string TelefonoEmpresa { get; set; }
+    public string EmailEmpresa { get; set; }
+    public string DireccionEmpresa { get; set; }
 
     // Datos del formulario
-    public string? LinkFormulario { get; set; }
+    public string LinkFormulario { get; set; }
 }

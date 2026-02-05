@@ -7,12 +7,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="administradorcore.cifrar" />
     <PackageReference Include="administradorcore.implementacion" />
+    <PackageReference Include="administradorcore.cifrar" />
     <PackageReference Include="AWSSDK.SimpleEmail" />
     <PackageReference Include="AWSSDK.SimpleEmailV2" />
+    <PackageReference Include="HtmlAgilityPack" />
     <PackageReference Include="HtmlSanitizer" />
     <PackageReference Include="Mapster" />
+    <PackageReference Include="Devart.Data.Linq" />
+    <PackageReference Include="QuestPDF" />
   </ItemGroup>
 
   <ItemGroup>

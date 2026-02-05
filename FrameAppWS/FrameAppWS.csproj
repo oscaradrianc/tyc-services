@@ -19,6 +19,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="Templates\consentimiento-creado.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Templates\consentimiento-firmado.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="Templates\EmailFinProceso.html">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

@@ -1,4 +1,5 @@
 ﻿using Devart.Data.Linq.Mapping;
+using ServiceStack.DataAnnotations;
 using System;
 using System.Runtime.Serialization;
 
@@ -95,8 +96,9 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "cons_aceptoterminospersjuridica")]
         public string AceptoTerminosPersonaJuridica { get; set; }
 
-        [Column(Name = "cons_referencia")]
+        [Column(Name = "cons_referencia") ]
         public string Referencia { get; set; }
-
+        [Column(Name = "cons_ip")]
+        public string DireccionIP { get; set; }
     }
 }

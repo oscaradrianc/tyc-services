@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #6C87AE; }
+        .page-header { background-color: transparent; padding: 20px 0; }
+        .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 15px; }
+        .login-card { background: rgba(255,255,255,0.95); border-radius: 12px; padding: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); text-align: center; border: 1px solid #e1e5eb; }
+        h5 { color: #1F41BB; font-weight: 600; margin-bottom: 1rem; font-size: 1.25rem; margin-top: 0; }
+        .fw-bold { font-weight: 700 !important; }
+        .texto-secundario { color: #6C87AE; font-size: 1rem; line-height: 1.5; margin-bottom: 2rem; }
+        .logo { max-height: 80px; margin-bottom: 1.5rem; display: inline-block; }
+        .detalle-titulo { text-align: left; font-size: 1rem; margin-bottom: 1rem; color: #6C87AE; margin-top: 2rem; }
+        .tabla-detalles { width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 1rem; }
+        .tabla-detalles td { padding: 12px 15px; font-size: 0.9rem; color: #3b4a70; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
+        .tabla-detalles tr:last-child td { border-bottom: none; }
+        .text-muted { color: #6c757d !important; }
+        .small { font-size: 0.875em; }
+        ul { margin: 0; padding-left: 1rem; }
+        li { margin-bottom: 0.25rem; }
+        .texto-final { margin-top: 3rem; font-size: 0.875rem; color: #6c757d; line-height: 1.5; }
+        .page-footer { padding: 2rem 0; font-size: 0.8rem; color: #a0aec0; text-align: justify; }
+        .footer-content { display: table; width: 100%; }
+        .footer-col { display: table-cell; vertical-align: top; }
+        .footer-legal { width: 70%; padding-right: 20px; }
+        .footer-logos { width: 30%; text-align: right; }
+        .small-logo { max-height: 40px; margin-left: 10px; }
+        a { color: #1F41BB; text-decoration: none; }
+        @media (max-width: 600px) {
+            .login-card { padding: 20px; }
+            .footer-col { display: block; width: 100%; text-align: center; padding: 0; margin-bottom: 20px; }
+            .footer-logos { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="page-header">
+        <div class="container">
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="login-card">
+
+            <h5>
+                ¡Confirmamos que [TituloEstado] de las políticas de tratamiento de datos personales ha sido recibida el
+                <span class="fw-bold">[Fecha]</span>!
+            </h5>
+
+            <p class="texto-secundario">
+                [MensajeEstado]
+            </p>
+
+            <img src="[LogoEmpresa]" alt="Logo Agencia" class="logo">
+
+            <div style="text-align: left;">
+                <p class="detalle-titulo">Detalles registrados:</p>
+
+                <table class="tabla-detalles">
+                    <tbody>
+                        [DetalleCliente]
+                        <tr>
+                            <td>Documento</td>
+                            <td>[DocumentoCliente]</td>
+                        </tr>
+                        <tr>
+                            <td>Canal de aceptación</td>
+                            <td>Enlace Web</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Políticas aceptadas</td>
+                            <td>
+                                <ul class="text-muted small">
+                                    [ListaPoliticas]
+                                </ul>
+                            </td>
+                        </tr>
+                        [SeccionMedios]
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="texto-final">
+                Si desea revocar la autorización o hacer una consulta, escriba a <br>
+                <a href="mailto:[EmailEmpresa]">[EmailEmpresa]</a><br><br>
+                Gracias por confiar en [NombreEmpresa].
+            </p>
+        </div>
+    </main>
+
+    <footer class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-col footer-legal">
+                DE: [NombreEmpresa]
+                <br><br>
+                Derechos reservados. Aplican derechos y obligaciones sobre la protección de datos personales de
+                acuerdo a la ley colombiana (Ley 1581 de 2012 y reglamentación). [CertificacionesTexto]
+            </div>
+
+            <div class="footer-col footer-logos">
+                <p style="margin-top: 0; margin-bottom: 10px;">Certificaciones y calidad</p>
+                [LogosCertificaciones]
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+            <small>by ideas fractal 2025</small>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using Tyc.Interface.Repositories;
-using Tyc.Interface.Response;
+using Tyc.Interface.Response.Empresas;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -51,7 +51,7 @@ public class EmpresasBL : IEmpresaService
         return created.EmpresaId;
     }
 
-    public bool ActualizarEmpresa(TycBaseContext context, Empresa entity, List<Texto> textosEntity)
+    public bool ActualizarEmpresa(TycBaseContext context, Empresa entity, List<Texto> textosEntity, int usuarioId)
     {
         // Validar subdominio único (excluyendo la Empresa actual)
         if (_repository.ExisteSubdominio(context, entity.Subdominio, entity.EmpresaId))
@@ -67,10 +67,30 @@ public class EmpresasBL : IEmpresaService
 
         if (updated != null)
         {
+            //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
+            ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+            ReadOnlySpan<char> prefijo = entity.EmpresaId.ToString().AsSpan();
+
+            if (!concatenado.StartsWith(prefijo))
+                throw new InvalidOperationException("Prefijo inválido");
+
+            int usuaId = int.Parse(concatenado[prefijo.Length..]);
+
             //Actualiza los textos de los titulos
             foreach (var item in textosEntity)
             {
-                _textoRepository.Update(context, item);                
+                if(_textoRepository.Exists(context, item.TextText) == false)
+                {
+                    item.TextFechaCreacion = DateTime.Now;
+                    item.UsuaUsuario = usuaId;
+                    _textoRepository.Create(context, item);
+                    continue;
+                }
+                else
+                {
+                    _textoRepository.Update(context, item);
+                }
+                           
             }
         }
 

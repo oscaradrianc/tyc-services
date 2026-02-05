@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Devart.Data.Linq;
+using DevExpress.CodeParser;
 using Tyc.Interface.Repositories;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -111,9 +114,9 @@ public class TextoRepository : ITextoRepository
         return true;
     }
 
-    public bool Exists(TycBaseContext context, int id)
+    public bool Exists(TycBaseContext context, int? id)
     {
-        return context.GetTable<Texto>().Any(x => x.TextText == id);
+        return id != null && context.GetTable<Texto>().Any(x => x.TextText == id);
     }
 
     public bool ExisteTextoParaEmpresaYTipo(TycBaseContext context, int EmpresaId, string tipoTexto, int? excludeId = null)
@@ -125,5 +128,92 @@ public class TextoRepository : ITextoRepository
             query = query.Where(x => x.TextText != excludeId.Value);
 
         return query.Any();
+    }
+    public async Task<Texto> GetByIdAsync(TycBaseContext context, int id)
+    {
+        return await Task.Run(() => context.GetTable<Texto>()
+            .FirstOrDefault(x => x.TextText == id));
+    }
+
+    public async Task<List<Texto>> GetByEmpresaAsync(TycBaseContext context, int EmpresaId, bool soloActivos = true)
+    {
+        return await Task.Run(() => 
+        {
+            var query = context.GetTable<Texto>()
+                .Where(x => x.EmpresaId == EmpresaId);
+
+            if (soloActivos)
+                query = query.Where(x => x.TextEstado == EstadoTexto.Activo);
+
+            return query.OrderBy(x => x.TextTipoTexto).ToList();
+        });
+    }
+
+    public async Task<Texto> GetByEmpresaYTipoAsync(TycBaseContext context, int EmpresaId, string tipoTexto)
+    {
+        return await Task.Run(() => context.GetTable<Texto>()
+            .FirstOrDefault(x => x.EmpresaId == EmpresaId
+                && x.TextTipoTexto == tipoTexto
+                && x.TextEstado == EstadoTexto.Activo));
+    }
+
+    public async Task<List<Texto>> GetByEmpresaYTiposAsync(TycBaseContext context, int EmpresaId, List<string> tiposTexto, bool soloActivos = true)
+    {
+        return await Task.Run(() => 
+        {
+            if (tiposTexto == null || !tiposTexto.Any())
+                return new List<Texto>();
+
+            var query = context.GetTable<Texto>()
+                .Where(x => x.EmpresaId == EmpresaId && tiposTexto.Contains(x.TextTipoTexto));
+
+            if (soloActivos)
+                query = query.Where(x => x.TextEstado == EstadoTexto.Activo);
+
+            return query.OrderBy(x => x.TextTipoTexto).ToList();
+        });
+    }
+
+    public async Task<Texto> CreateAsync(TycBaseContext context, Texto entity)
+    {
+        context.GetTable<Texto>().InsertOnSubmit(entity);
+        await Task.Run(() => context.SubmitChanges());
+        return entity;
+    }
+
+    public async Task<Texto> UpdateAsync(TycBaseContext context, Texto entity)
+    {
+        var existing = await Task.Run(() => context.GetTable<Texto>()
+            .FirstOrDefault(x => x.TextText == entity.TextText));
+
+        if (existing == null)
+            return null;
+
+        existing.TextTipoTexto = entity.TextTipoTexto;
+        existing.TextTextoDelosTerminos = entity.TextTextoDelosTerminos;
+        existing.TextEstado = entity.TextEstado;
+        existing.UsuaUsuario = entity.UsuaUsuario;
+
+        await Task.Run(() => context.SubmitChanges());
+        return existing;
+    }
+
+    public async Task<bool> CambiarEstadoAsync(TycBaseContext context, int id, string estado)
+    {
+        var entity = await Task.Run(() => context.GetTable<Texto>()
+            .FirstOrDefault(x => x.TextText == id));
+
+        if (entity == null)
+            return false;
+
+        entity.TextEstado = estado;
+        await Task.Run(() => context.SubmitChanges());
+
+        return true;
+    }
+
+    public async Task<bool> ExistsAsync(TycBaseContext context, int id)
+    {
+        return await Task.Run(() => context.GetTable<Texto>().Any(x => x.TextText == id));
     }
 }
