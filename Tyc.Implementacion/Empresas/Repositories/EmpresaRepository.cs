@@ -68,11 +68,11 @@ public class EmpresaRepository : IEmpresaRepository
         existing.SolicitaIdentificacion = entity.SolicitaIdentificacion;
 
         // Tipos de negocio
-        existing.ManejaCorporativo = entity.ManejaCorporativo;
-        existing.ManejaConsolidacion = entity.ManejaConsolidacion;
-        existing.ManejaReceptivo = entity.ManejaReceptivo;
+        existing.ManejaViajesVacacionales = entity.ManejaViajesVacacionales;
+        existing.ManejaTurismoEmisivo = entity.ManejaTurismoEmisivo;
+        existing.ManejaOficinaRecepTuristica = entity.ManejaOficinaRecepTuristica;
         existing.ManejaMayoreo = entity.ManejaMayoreo;
-        existing.ManejaEventos = entity.ManejaEventos;
+        existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
 
         // Nota: EmpresaIdBloqueada NO se actualiza aquí por seguridad
         // Debe tener un método separado solo para SUPERADMIN
@@ -156,11 +156,11 @@ public class EmpresaRepository : IEmpresaRepository
         existing.SolicitaIdentificacion = entity.SolicitaIdentificacion;
 
         // Tipos de negocio
-        existing.ManejaCorporativo = entity.ManejaCorporativo;
-        existing.ManejaConsolidacion = entity.ManejaConsolidacion;
-        existing.ManejaReceptivo = entity.ManejaReceptivo;
+        existing.ManejaViajesVacacionales = entity.ManejaViajesVacacionales;
+        existing.ManejaTurismoEmisivo = entity.ManejaTurismoEmisivo;
+        existing.ManejaOficinaRecepTuristica = entity.ManejaOficinaRecepTuristica;
         existing.ManejaMayoreo = entity.ManejaMayoreo;
-        existing.ManejaEventos = entity.ManejaEventos;
+        existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
 
         await Task.Run(() => context.SubmitChanges());
         return existing;

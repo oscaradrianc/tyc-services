@@ -50,9 +50,10 @@ public class EmpresaResponse
     public string? Estado { get; set; }
 
     // Tipos de negocio
-    public string? ManejaCorporativo { get; set; }
-    public string? ManejaConsolidacion { get; set; }
-    public string? ManejaReceptivo { get; set; }
+    public string? ManejaViajesVacacionales { get; set; }
+    public string? ManejaTurismoEmisivo { get; set; }
+    public string? ManejaTurismoReuniones { get; set; }
     public string? ManejaMayoreo { get; set; }
-    public string? ManejaEventos { get; set; }
+    public string? ManejaOficinaRecepTuristica { get; set; }
+   
 }

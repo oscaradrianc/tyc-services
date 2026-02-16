@@ -14,6 +14,8 @@ namespace Tyc.Interface.Repositories
         Usuario GetByLogin(TycBaseContext context, string login);
         VUsuariosSist30 GetByLoginAdmin(TycBaseContext context, string login);
         int CrearUsuario(TycBaseContext context, Usuario usuario);
+        int ActualizarUsuario(TycBaseContext context, Usuario usuario);
         int CambiarClave(TycBaseContext context, int usuarioId, string nuevaClave);
+        int ActualizarClave(TycBaseContext context, int usuarioId, string nuevaClave);
     }
 }

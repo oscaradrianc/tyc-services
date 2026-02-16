@@ -10,6 +10,8 @@ namespace Tyc.Interface.Services
     public interface IUsuarioService
     {
         ApiResponse<UsuarioRS> CrearUsuario(TycBaseContext context, Usuario usuario);
+        ApiResponse<UsuarioRS> ActualizarUsuario(TycBaseContext context, Modelo.Contexto.Usuario usuario);
         ChangePasswordRS CambiarClave(TycBaseContext context, ChangePasswordRQ pChangePassUserRQ, CustomUserSession customUserSession, string IP);
+        ApiResponse<bool> EncriptarPassDefecto(TycBaseContext context, int idUsuario);
     }
 }

@@ -23,6 +23,7 @@ namespace Tyc.Modelo
         public Table<TipoIdentificacion> TiposIdentificacion { get; set; }
         public Table<Usuario> Usuarios { get; set; }
         public Table <VUsuariosSist30> VUsuariosSist30 { get; set; }
+        public Table<PasswordResetToken> PasswordResetTokens { get; set; }
     }
 
 

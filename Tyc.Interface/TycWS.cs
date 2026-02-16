@@ -1,10 +1,10 @@
 ﻿using Administrador.ServiceLogs.Auth;
 using MapsterMapper;
 using ServiceStack;
-using ServiceStack.Host;
 using ServiceStack.Web;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
@@ -80,7 +80,15 @@ public class TycWS : Service
 
     public async Task<ApiResponse<bool>> Put(ActualizarConsentimientoConFirma request)
     {
-        string clientIp = Request.UserHostAddress;
+        string clientIp = string.Empty;
+
+        if (IPAddress.TryParse(Request.UserHostAddress, out var ip))
+        {
+            clientIp = ip.IsIPv4MappedToIPv6
+                ? ip.MapToIPv4().ToString()
+                : ip.ToString();
+        }
+
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))

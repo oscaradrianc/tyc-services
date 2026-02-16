@@ -84,6 +84,38 @@ namespace Tyc.Implementacion.Usuarios
             }
         }
 
+        public ApiResponse<UsuarioRS> ActualizarUsuario(TycBaseContext context, Modelo.Contexto.Usuario usuario)
+        {
+            try
+            {
+                //Valida si ya existe el usuario
+                var response = new ApiResponse<UsuarioRS>();
+                var usuarioExistente = _usuarioRepository.GetById(context, usuario.UsuaUsua);
+                if (usuarioExistente == null)
+                {
+                    response.Success = false;
+                    response.Mensaje = "No existe el usuario que se desea actualizar.";
+                    return response;
+                }
+                int res = _usuarioRepository.ActualizarUsuario(context, usuario);
+                return new ApiResponse<UsuarioRS>
+                {
+                    Success = res == 1,
+                    Mensaje = (res == 0) ? "Error al actualizar el usuario." : "Usuario actualizado exitosamente.",
+                    Data = new UsuarioRS { UsurioId = usuario.UsuaUsua }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar el usuario.");
+                return new ApiResponse<UsuarioRS>
+                {
+                    Success = false,
+                    Mensaje = "Ocurrió un error al actualizar el usuario."
+                };
+            }
+        }
+
         public ChangePasswordRS CambiarClave(TycBaseContext context, ChangePasswordRQ pChangePassUserRQ, CustomUserSession customUserSession, string IP)
         {
             var resp = new ChangePasswordRS();
@@ -398,6 +430,49 @@ namespace Tyc.Implementacion.Usuarios
             }
 
             return isSQLInjection;
+        }
+
+
+        public ApiResponse<bool> EncriptarPassDefecto(TycBaseContext context, int idUsuario)
+        {
+            try
+            {
+                //Valida si ya existe el usuario
+                var response = new ApiResponse<bool>();
+                var usuarioExistente = _usuarioRepository.GetById(context, idUsuario);
+
+                if (usuarioExistente != null)
+                {
+                    string claveCifrada = new BaseCifrado(Convert.ToDateTime(usuarioExistente.UsuaFechaCreacion).ToString("yyyyMMdd"))
+                    .EncryptSHA512(usuarioExistente.UsuaLogin.ToLower());
+
+                    
+                    int res = _usuarioRepository.ActualizarClave(context, usuarioExistente.UsuaUsua, claveCifrada);
+
+                    return new ApiResponse<bool>
+                    {
+                        Success = res == 1,
+                        Mensaje = (res == 0) ? "Error al actualizar la clave defecto." : "",
+                        Data = true
+                    };
+                }
+
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Mensaje = "No existe el usuario",
+                    Data = false
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar la clave por defecto.");
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Mensaje = "Ocurrió un error al actualizar la clave por defecto."
+                };
+            }
         }
     }
 }

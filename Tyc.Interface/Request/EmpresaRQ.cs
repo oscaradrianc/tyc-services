@@ -53,11 +53,11 @@ public class CreateEmpresa : IReturn<EmpresaResponse>
     public string SolicitaIdentificacion { get; set; }
 
     // Tipos de negocio
-    public string ManejaCorporativo { get; set; }
-    public string ManejaConsolidacion { get; set; }
-    public string ManejaReceptivo { get; set; }
+    public string ManejaViajesVacacionales { get; set; }
+    public string ManejaTurismoEmisivo { get; set; }
+    public string ManejaOficinaRecepTuristica { get; set; }
     public string ManejaMayoreo { get; set; }
-    public string ManejaEventos { get; set; }
+    public string ManejaTurismoReuniones { get; set; }
 }
 
 [Route("/Empresas/{Id}", "PUT")]
@@ -92,10 +92,10 @@ public class UpdateEmpresa : IReturn<EmpresaResponse>
     public string SolicitaEmail { get; set; }
     public string SolicitaTelefono { get; set; }
     public string SolicitaIdentificacion { get; set; }
-    public string ManejaCorporativo { get; set; }
-    public string ManejaConsolidacion { get; set; }
-    public string ManejaReceptivo { get; set; }
+    public string ManejaViajesVacacionales { get; set; }
+    public string ManejaTurismoEmisivo { get; set; }
+    public string ManejaOficinaRecepTuristica { get; set; }
     public string ManejaMayoreo { get; set; }
-    public string ManejaEventos { get; set; }
+    public string ManejaTurismoReuniones { get; set; }
     public List<TextoEmpresaItem> Textos { get; set; }
 }

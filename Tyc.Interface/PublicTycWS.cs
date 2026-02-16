@@ -1,9 +1,11 @@
-﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
+using solg.lib.settings;
+using System;
+using System.Data.SqlTypes;
+using System.Net;
+using System.Threading.Tasks;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.Consentimientos;
 using Tyc.Interface.Response.General;
@@ -19,20 +21,30 @@ public class PublicTycWS : Service
     private readonly IConsentimientoService _consentimientoService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<PublicTycWS> _logger;
+    private readonly IPasswordResetService _passwordResetService;
 
     public PublicTycWS(
         IConsentimientoService consentimientoService,
         IMemoryCache cache,
-        ILogger<PublicTycWS> logger)
+        ILogger<PublicTycWS> logger,
+        IPasswordResetService passwordResetService)
     {
         _consentimientoService = consentimientoService;
         _cache = cache;
         _logger = logger;
+        _passwordResetService = passwordResetService;
     }
 
     public async Task<ApiResponse<FormularioConsentimientoRS>> Get(ObtenerFormularioConsentimiento request)
     {
-        string clientIp = Request.UserHostAddress;        
+        string clientIp = string.Empty;
+
+        if (IPAddress.TryParse(Request.UserHostAddress, out var ip))
+        {
+            clientIp = ip.IsIPv4MappedToIPv6
+                ? ip.MapToIPv4().ToString()
+                : ip.ToString();
+        }
 
         if (!ValidarRateLimit(clientIp))
         {
@@ -97,7 +109,14 @@ public class PublicTycWS : Service
 
     public async Task<ApiResponse<bool>> Put(ActualizarConsentimiento request)
     {
-        string clientIp = Request.UserHostAddress;
+        string clientIp = string.Empty;
+
+        if (IPAddress.TryParse(Request.UserHostAddress, out var ip))
+        {
+            clientIp = ip.IsIPv4MappedToIPv6
+                ? ip.MapToIPv4().ToString()
+                : ip.ToString();
+        }
 
         if (!ValidarRateLimit(clientIp))
         {
@@ -143,5 +162,47 @@ public class PublicTycWS : Service
                 throw;
             }
         }
-    }    
+    }
+
+    
+
+    // Agregar al constructor existente
+    // IPasswordResetService passwordResetService
+
+    public object Post(ForgotPasswordRQ request)
+    {
+        var settings = solg.lib.settings.Settings.GetInstance();
+        settings.SetDbConfig(true);
+
+        string connectionString = settings.GetConnection("Consentimiento").connectionString;
+        var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+        using (var dbContext = TycContext.DataContext(connectionString, motorBD))
+        {
+            var frontendUrl = settings.GetAppSetting("urlBackend");
+            _passwordResetService.GenerateResetToken(dbContext, request.UsuaLogin, request.Email, frontendUrl);
+
+            // Siempre respuesta genérica
+
+            return new ApiResponse<bool> { 
+                Success = true, 
+                Mensaje = "Si el login está registrado y el correo esta asociado al login concuerda, recibirás un enlace.",
+                Data = true
+            };
+        }
+    }
+
+    public object Post(ResetPasswordRQ request)
+    {
+        var settings = solg.lib.settings.Settings.GetInstance();
+        settings.SetDbConfig(true);
+        string connectionString = settings.GetConnection("Consentimiento").connectionString;
+        var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+        using (var dbContext = TycContext.DataContext(connectionString, motorBD))
+        { 
+            _passwordResetService.ResetPassword(dbContext, request.Token, request.Email, request.NewPassword);
+            return new { Message = "Contraseña actualizada correctamente." };
+        }
+    }
 }

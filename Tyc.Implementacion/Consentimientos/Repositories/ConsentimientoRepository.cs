@@ -419,7 +419,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
         if (fechaInicial.HasValue && fechaFinal.HasValue)
         {
             var fechaFinNew = fechaFinal.Value.Date.AddDays(1);
-            query = query.Where(x => x.FechaCreacion >= fechaInicial.Value.Date && x.FechaCreacion < fechaFinNew);
+            query = query.Where(x => x.FechaCreacion >= fechaInicial && x.FechaCreacion < fechaFinNew);
         }
 
         if (!string.IsNullOrWhiteSpace(estado))

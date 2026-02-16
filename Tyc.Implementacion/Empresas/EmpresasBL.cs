@@ -79,7 +79,8 @@ public class EmpresasBL : IEmpresaService
             //Actualiza los textos de los titulos
             foreach (var item in textosEntity)
             {
-                if(_textoRepository.Exists(context, item.TextText) == false)
+                var texto = _textoRepository.GetByEmpresaYTipo(context, item.EmpresaId, item.TextTipoTexto);
+                if (texto == null)
                 {
                     item.TextFechaCreacion = DateTime.Now;
                     item.UsuaUsuario = usuaId;

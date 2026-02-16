@@ -80,6 +80,8 @@ public class Program
             builder.Services.AddScoped<IEmpresaRepository, EmpresaRepository>();
             builder.Services.AddScoped<IFirmaRepository, FirmaRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+            builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
             builder.Services.AddScoped<ITextoService, TextosBL>();

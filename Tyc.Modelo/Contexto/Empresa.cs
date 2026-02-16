@@ -92,20 +92,20 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "empr_estado")]
         public string Estado { get; set; }
 
-        [Column(Name = "empr_manejacorporativo")]
-        public string ManejaCorporativo { get; set; }
+        [Column(Name = "empr_manejaviajesvacacionales")]
+        public string ManejaViajesVacacionales { get; set; }
 
-        [Column(Name = "empr_manejaconsolidacion")]
-        public string ManejaConsolidacion { get; set; }
+        [Column(Name = "empr_manejaturismoemisivo")]
+        public string ManejaTurismoEmisivo { get; set; }
 
-        [Column(Name = "empr_manejareceptivo")]
-        public string ManejaReceptivo { get; set; }
+        [Column(Name = "empr_manejarofrepturistica")]
+        public string ManejaOficinaRecepTuristica { get; set; }
 
         [Column(Name = "empr_manejamayoreo")]
         public string ManejaMayoreo { get; set; }
 
-        [Column(Name = "empr_manejaeventos")]
-        public string ManejaEventos { get; set; }
+        [Column(Name = "empr_manejaturismoreuniones")]
+        public string ManejaTurismoReuniones { get; set; }
 
         [Column(Name = "empr_logobase64")]
         public string LogoBase64 { get; set; }
