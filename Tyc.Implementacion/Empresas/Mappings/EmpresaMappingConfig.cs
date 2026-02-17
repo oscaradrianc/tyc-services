@@ -46,7 +46,8 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaTurismoEmisivo, src => src.ManejaTurismoEmisivo)
             .Map(dest => dest.ManejaOficinaRecepTuristica, src => src.ManejaOficinaRecepTuristica)
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
-            .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones);
+            .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
+            .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo);
 
         // CreateRequest a Entity
         config.NewConfig<CreateEmpresa, Empresa>()
@@ -77,12 +78,13 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.SolicitaEmail, src => src.SolicitaEmail)
             .Map(dest => dest.SolicitaTelefono, src => src.SolicitaTelefono)
             .Map(dest => dest.SolicitaIdentificacion, src => src.SolicitaIdentificacion)
-            .Map(dest => dest.Estado, src => EstadoBloqueoEmpresa.NoBloqueada)
+            .Map(dest => dest.Estado, src => EstadoBloqueoEmpresa.Activo)
             .Map(dest => dest.ManejaViajesVacacionales, src => src.ManejaViajesVacacionales)
             .Map(dest => dest.ManejaTurismoEmisivo, src => src.ManejaTurismoEmisivo)
             .Map(dest => dest.ManejaOficinaRecepTuristica, src => src.ManejaOficinaRecepTuristica)
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
+            .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
             .Ignore(dest => dest.EmpresaId);
 
         // UpdateRequest a Entity
@@ -119,6 +121,7 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaOficinaRecepTuristica, src => src.ManejaOficinaRecepTuristica)
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
+            .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
             .Ignore(dest => dest.Guid)
             .Ignore(dest => dest.Estado);
     }

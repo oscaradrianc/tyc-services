@@ -55,5 +55,7 @@ public class EmpresaResponse
     public string? ManejaTurismoReuniones { get; set; }
     public string? ManejaMayoreo { get; set; }
     public string? ManejaOficinaRecepTuristica { get; set; }
-   
+    public string? ManejaCorporativo { get; set; }
+
+
 }

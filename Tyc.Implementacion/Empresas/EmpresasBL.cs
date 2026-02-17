@@ -44,7 +44,7 @@ public class EmpresasBL : IEmpresaService
         ValidarEmpresa(entity);
 
         // Establecer valores por defecto
-        entity.Estado = EstadoBloqueoEmpresa.NoBloqueada;
+        entity.Estado = EstadoBloqueoEmpresa.Activo;
         entity.Guid = Guid.NewGuid();
 
         var created = _repository.Create(context, entity);
@@ -90,8 +90,7 @@ public class EmpresasBL : IEmpresaService
                 else
                 {
                     _textoRepository.Update(context, item);
-                }
-                           
+                }                           
             }
         }
 

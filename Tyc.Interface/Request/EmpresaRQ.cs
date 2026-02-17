@@ -58,6 +58,7 @@ public class CreateEmpresa : IReturn<EmpresaResponse>
     public string ManejaOficinaRecepTuristica { get; set; }
     public string ManejaMayoreo { get; set; }
     public string ManejaTurismoReuniones { get; set; }
+    public string ManejaCorporativo { get; set; }
 }
 
 [Route("/Empresas/{Id}", "PUT")]
@@ -97,5 +98,6 @@ public class UpdateEmpresa : IReturn<EmpresaResponse>
     public string ManejaOficinaRecepTuristica { get; set; }
     public string ManejaMayoreo { get; set; }
     public string ManejaTurismoReuniones { get; set; }
+    public string ManejaCorporativo { get; set; }
     public List<TextoEmpresaItem> Textos { get; set; }
 }

@@ -109,6 +109,10 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "empr_logobase64")]
         public string LogoBase64 { get; set; }
+
+        [Column(Name = "empr_manejacorporativo")]
+        public string ManejaCorporativo { get; set; }
+
     }
 
     /// <summary>
@@ -126,6 +130,7 @@ namespace Tyc.Modelo.Contexto
     public static class EstadoBloqueoEmpresa
     {
         public const string Bloqueada = "BLOQUEADA";
-        public const string NoBloqueada = "NO_BLOQUEADA";
+        public const string Activo = "ACTIVO";
+        public const string Inactiva = "INACTIVO";
     }
 }

@@ -73,6 +73,7 @@ public class EmpresaRepository : IEmpresaRepository
         existing.ManejaOficinaRecepTuristica = entity.ManejaOficinaRecepTuristica;
         existing.ManejaMayoreo = entity.ManejaMayoreo;
         existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
+        existing.ManejaCorporativo = entity.ManejaCorporativo;
 
         // Nota: EmpresaIdBloqueada NO se actualiza aquí por seguridad
         // Debe tener un método separado solo para SUPERADMIN
@@ -161,6 +162,7 @@ public class EmpresaRepository : IEmpresaRepository
         existing.ManejaOficinaRecepTuristica = entity.ManejaOficinaRecepTuristica;
         existing.ManejaMayoreo = entity.ManejaMayoreo;
         existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
+        existing.ManejaCorporativo = entity.ManejaCorporativo;
 
         await Task.Run(() => context.SubmitChanges());
         return existing;
