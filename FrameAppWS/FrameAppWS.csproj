@@ -19,6 +19,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="Resources\logo_default.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="Templates\consentimiento-creado.html">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
@@ -47,6 +50,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Middleware\" />
+	  <Folder Include="Resources\" />
 	</ItemGroup>
   
 </Project>

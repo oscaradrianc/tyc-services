@@ -42,7 +42,7 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "cons_identificacion")]
         public string IdentificacionCliente { get; set; }
 
-        [Column(Name = "cons_fechacrea", IsDbGenerated = true)]
+        [Column(Name = "cons_fechacrea")]
         public DateTime FechaCreacion { get; set; }
 
         [Column(Name = "cons_fechaaceptacion")]

@@ -1,10 +1,15 @@
 ﻿using AdministradorCore.Cifrar;
+using Amazon.Runtime.Internal.Transform;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Mail;
+using System.Net.Mime;
+using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
@@ -28,6 +33,7 @@ public class ConsentimientosBL : IConsentimientoService
     private readonly ITextoService _textoService;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IConfiguration _configuration;
+    private readonly IEmpresaConfiguration _empresaConfig;
 
     public ConsentimientosBL(
         IConsentimientoRepository consentimientoRepository,
@@ -39,7 +45,8 @@ public class ConsentimientosBL : IConsentimientoService
         IMapper mapper,
         ITextoService textoService,
         ITemplateRenderer templateRenderer,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmpresaConfiguration empresaConfig)
     {
         _repository = consentimientoRepository;
         _firmaRepository = firmaRepository;
@@ -50,6 +57,7 @@ public class ConsentimientosBL : IConsentimientoService
         _textoService = textoService;
         _templateRenderer = templateRenderer;
         _configuration = configuration;
+        _empresaConfig = empresaConfig;
     }
 
     public async Task<ConfirmacionConsentimientoRS> ObtenerConfirmacionConsentimientoAsync(TycBaseContext dbSigo, Guid id)
@@ -202,6 +210,7 @@ public class ConsentimientosBL : IConsentimientoService
         int usuarioId = int.Parse(concatenado[prefijo.Length..]);
 
         entity.UsuarioId = usuarioId;
+        entity.FechaCreacion = DateTime.Now;
 
         var created = await _repository.CrearConsentimientoAsync(context, entity);
         Guid consentimientoId = created.GuId;
@@ -211,7 +220,7 @@ public class ConsentimientosBL : IConsentimientoService
         string guidEncriptado = new BaseCifrado(ConstantesTyc.llaveParametroLink)
             .Encrypt256(guidConcatenado, true);
 
-        string linkFormulario = $"{empresa?.Subdominio}?id={Uri.EscapeDataString(guidEncriptado)}";
+        string linkFormulario = $"https://{empresa?.Subdominio}.consentimiento.co?id={Uri.EscapeDataString(guidEncriptado)}";
 
         //Enviar email en background
         if (empresa != null && !string.IsNullOrWhiteSpace(emailDestinatario))
@@ -225,7 +234,7 @@ public class ConsentimientosBL : IConsentimientoService
                     {
                         { "TextoSaludo", textoSaludoPersonalizado },
                         { "TextoAlternativo", textoAlternoPersonalizado },
-                        { "LogoEmpresa", empresa.LogoBase64 },
+                        //{ "LogoEmpresa", string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64 },
                         { "NombreCliente", nombreCompleto },
                         { "NombreEmpresa", empresa.Nombre },
                         { "NumeroContacto", empresa.Telefono },
@@ -233,9 +242,17 @@ public class ConsentimientosBL : IConsentimientoService
                     };
 
                     var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO, valores);
+                    var logo = string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64;
+                    byte[] bytesLogo = ConvertirBase64ABytes(logo);
 
-                    bool enviado = await _emailService.EnviarEmailAsync(emailDestinatario, asunto,
-                        htmlBody);
+                    var listaImagenes = new List<ImagenEnLinea>
+                    {
+                        new (bytesLogo, "LogoDinamico", "image/png"),
+                    };
+
+                    AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
+
+                    bool enviado = await _emailService.EnviarEmailAsync(emailDestinatario, asunto, vista);
 
                     if (enviado)
                     {
@@ -298,6 +315,8 @@ public class ConsentimientosBL : IConsentimientoService
             await _firmaRepository.EliminarAsync(context, consentimientoExistente.Id);
         }
 
+        request.FechaFirma = DateTime.Now;
+
         // 7. Guardar nueva firma si existe
         if (firmaBytes != null && firmaBytes.Length > 0)
         {
@@ -332,7 +351,8 @@ public class ConsentimientosBL : IConsentimientoService
             try
             {
                // Lógica de envío de correo de confirmación
-               await EnviarCorreoConfirmacionAsync(context, consentimientoExistente, politicasDict, request.Estado, request.FechaFirma, request.OpcionesContactabilidad);
+               await EnviarCorreoConfirmacionAsync(context, consentimientoExistente, politicasDict, request.Estado, request.FechaFirma, 
+                   request.OpcionesContactabilidad);
             }
             catch (Exception ex)
             {
@@ -630,6 +650,7 @@ public class ConsentimientosBL : IConsentimientoService
         var consentimiento = resultValidacion.Consentimiento;
                
         CifrarDatosSensibles(consentimiento.EmpresaId, request.DatosCliente);
+        request.FechaFirma = DateTime.Now; //Toma como fecha de firma la fecha en que se actualiza el consentimiento la toma del WS
 
         ValidarOpcionesContactabilidad(request.OpcionesContactabilidad);
         var politicasDict = await ValidarYProcesarPoliticasAsync(context, request.PoliticasAceptadas, consentimiento.EmpresaId);
@@ -1038,6 +1059,14 @@ public class ConsentimientosBL : IConsentimientoService
                 </tr>";
         }
 
+        var logo = string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64;
+        byte[] bytesLogo = ConvertirBase64ABytes(logo);
+
+        var listaImagenes = new List<ImagenEnLinea>
+        {
+            new (bytesLogo, "LogoDinamico", "image/png"),
+        };
+
         // Certificaciones
         string logosCertificacionesHtml = "";
         string certificacionesTexto = "";
@@ -1047,19 +1076,21 @@ public class ConsentimientosBL : IConsentimientoService
 
         if (tieneIso9000)
         {
-             string iso9000Base64 = Convert.ToBase64String(empresa.LogoIso9000);
-             // Asumimos PNG para el ejemplo, pero podría ser necesario detectar mime type. 
-             // Si el byte[] ya es una imagen válida, en HTML src="data:image/png;base64,..."
-             logosCertificacionesHtml += $"<img src=\"data:image/png;base64,{iso9000Base64}\" alt=\"Iso 9000\" class=\"img-fluid small-logo\" style=\"max-height: 40px; margin-left: 10px;\">";
+             //string iso9000Base64 = Convert.ToBase64String(empresa.LogoIso9000);
+             listaImagenes.Add(new (empresa.LogoIso9000, "logoiso900", "image/png"));
+            // Asumimos PNG para el ejemplo, pero podría ser necesario detectar mime type. 
+            // Si el byte[] ya es una imagen válida, en HTML src="data:image/png;base64,..."
+            logosCertificacionesHtml += $"<img src=\"cid:logoiso900\" alt=\"Iso 9000\" class=\"img-fluid small-logo\" style=\"max-height: 40px; margin-left: 10px;\">";
         }
         if (tieneIso27001)
         {
-             string iso27001Base64 = Convert.ToBase64String(empresa.LogoIso27001);
-             logosCertificacionesHtml += $"<img src=\"data:image/png;base64,{iso27001Base64}\" alt=\"Iso 27001\" class=\"img-fluid small-logo\" style=\"max-height: 40px; margin-left: 10px;\">";
+             //string iso27001Base64 = Convert.ToBase64String(empresa.LogoIso27001);
+             listaImagenes.Add(new (empresa.LogoIso27001, "logoiso27000", "image/png"));
+            logosCertificacionesHtml += $"<img src=\"cid:logoiso27000\" alt=\"Iso 27001\" class=\"img-fluid small-logo\" style=\"max-height: 40px; margin-left: 10px;\">";
         }
 
         if (tieneIso9000 || tieneIso27001) 
-            certificacionesTexto = "Certificaciones: ISO 9001 (si aplica), PCI DSS.";
+            certificacionesTexto = "Certificaciones:";
 
 
         var valores = new Dictionary<string, string>
@@ -1067,7 +1098,7 @@ public class ConsentimientosBL : IConsentimientoService
             { "TituloEstado", estadoTitulo },
             { "Fecha", fechaStr },
             { "MensajeEstado", mensajeEstado },
-            { "LogoEmpresa", empresa.LogoBase64 ?? "" },
+            //{ "LogoEmpresa", string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64 },
             { "DetalleCliente", detalleClienteHtml },
             { "DocumentoCliente", datosDecriptados.Identificacion ?? "" },
             { "ListaPoliticas", listaPoliticasHtml },
@@ -1084,11 +1115,13 @@ public class ConsentimientosBL : IConsentimientoService
 
         try
         {
-            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO_FIRMADO, valores);
-               
+            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO_FIRMADO, valores);      
+            AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
+        
+
             if (!string.IsNullOrEmpty(emailDestinatario))
             {
-               await _emailService.EnviarEmailAsync(emailDestinatario, asunto, htmlBody);
+               await _emailService.EnviarEmailAsync(emailDestinatario, asunto, vista);
             }
         }
         catch (Exception ex)

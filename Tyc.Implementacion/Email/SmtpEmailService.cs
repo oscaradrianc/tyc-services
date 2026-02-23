@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+﻿
 using System;
-using System.Collections.Generic;
+using System.IO;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
+using System.Net.Mime;
+using System.Text;
 using System.Threading.Tasks;
-using Tyc.Interface.Request;
 using Tyc.Interface.Services;
-using Tyc.Modelo;
 using Tyc.Modelo.Configuracion;
 
 namespace Tyc.Implementacion.Email;
@@ -25,7 +26,7 @@ public class SmtpEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task<bool> EnviarEmailAsync(string destinatario, string asunto, string htmlBody)
+    public async Task<bool> EnviarEmailAsync(string destinatario, string asunto, AlternateView vistaHtml)
     {
         try
         {
@@ -39,10 +40,9 @@ public class SmtpEmailService : IEmailService
             mensaje.From = new MailAddress(_config.From, _config.FromName);
             mensaje.To.Add(new MailAddress(destinatario));
             mensaje.Subject = asunto;
-            mensaje.Body = htmlBody;
-            mensaje.IsBodyHtml = true;
             mensaje.SubjectEncoding = System.Text.Encoding.UTF8;
-            mensaje.BodyEncoding = System.Text.Encoding.UTF8;
+            
+            mensaje.AlternateViews.Add(vistaHtml);
 
             using var smtpClient = new SmtpClient(_config.SmtpHost, _config.SmtpPort);
 

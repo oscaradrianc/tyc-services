@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using Tyc.Interface.Request;
 using Tyc.Interface.Services;
@@ -28,7 +29,7 @@ public class AwsSesEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task<bool> EnviarEmailAsync(string destinatario, string asunto, string htmlBody)
+    public async Task<bool> EnviarEmailAsync(string destinatario, string asunto, AlternateView vistaHtml)
     {
         try
         {
@@ -48,10 +49,10 @@ public class AwsSesEmailService : IEmailService
                     Simple = new Message
                     {
                         Subject = new Content { Data = asunto, Charset = "UTF-8" },
-                        Body = new Body
+                        /*Body = new Body
                         {
                             Html = new Content { Data = htmlBody, Charset = "UTF-8" }
-                        }
+                        }*/
                     }
                 }
             };

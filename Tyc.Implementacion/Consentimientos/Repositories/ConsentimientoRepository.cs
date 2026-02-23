@@ -368,14 +368,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
 
         if (!string.IsNullOrWhiteSpace(estado))
         {
-            if (estado.Equals("F", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(x => x.FechaAceptacion != null);
-            }
-            else if (estado.Equals("P", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(x => x.FechaAceptacion == null);
-            }
+            query = query.Where(x => x.Estado == estado);
         }
 
         return await Task.Run(() => query.OrderByDescending(x => x.FechaCreacion).ToList());
@@ -413,7 +406,10 @@ public class ConsentimientoRepository : IConsentimientoRepository
                          TipoIdentificacion1 = c.TipoIdentificacion1,
                          Estado = c.Estado,
                          NombreEmpresa = e.Nombre,
-                         TipoPersona = c.TipoPersona
+                         TipoPersona = c.TipoPersona,
+                         RazonSocial = c.RazonSocial,
+                         NombreContacto = c.NombreContacto,
+                         Referencia = c.Referencia
                      });      
 
         if (fechaInicial.HasValue && fechaFinal.HasValue)

@@ -89,6 +89,8 @@ public class Program
             builder.Services.AddScoped<IUsuarioService, UsuariosBL>();
             builder.Services.AddScoped<IPdfService, PdfService>();
 
+            builder.Services.AddSingleton<IEmpresaConfiguration, EmpresaConfiguration>();
+
             builder.Services.AddLogging(logging =>
             {
                 logging.AddConsole();

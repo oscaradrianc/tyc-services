@@ -1,10 +1,16 @@
-using System;
+using AngleSharp.Io;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Mail;
+using System.Net.Mime;
+using System.Text;
 using Tyc.Interface.Services;
 using Tyc.Modelo.Configuracion;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Implementacion.Email;
 
@@ -13,6 +19,7 @@ public class SimpleTemplateRenderer : ITemplateRenderer
     private readonly string _templatesPath;
     private readonly ILogger<SimpleTemplateRenderer> _logger;
     private readonly Dictionary<string, string> _templateCache = new();
+       
 
     public SimpleTemplateRenderer(
         IOptions<EmailConfiguration> config,
@@ -60,4 +67,28 @@ public class SimpleTemplateRenderer : ITemplateRenderer
         return template;
     }
 
+    public AlternateView ConstruirVistaConImagen(string htmlBody, List<ImagenEnLinea> imagenes)
+    {
+        var vistaHtml = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, MediaTypeNames.Text.Html);
+
+        if (imagenes != null && imagenes.Any())
+        {
+            foreach (var imagen in imagenes)
+            {
+
+                if (imagen.Bytes != null || imagen.Bytes.Length > 0)
+                {
+                    var ms = new MemoryStream(imagen.Bytes);
+                    var recursoImagen = new LinkedResource(ms, imagen.MimeType)
+                    {
+                        ContentId = imagen.ContentId
+                    };
+
+                    vistaHtml.LinkedResources.Add(recursoImagen);
+                }
+            }          
+        }
+
+        return vistaHtml;
+    }
 }

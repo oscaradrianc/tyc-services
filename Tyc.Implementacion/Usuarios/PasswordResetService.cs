@@ -17,15 +17,18 @@ public class PasswordResetService : IPasswordResetService
     private readonly IPasswordResetRepository _resetRepo;
     private readonly IUsuarioRepository _usuarioRepo;
     private readonly IEmailService _emailService; // tu servicio de email existente
+    private readonly ITemplateRenderer _templateRenderer; // para construir el HTML del email
 
     public PasswordResetService(
         IPasswordResetRepository resetRepo,
         IUsuarioRepository usuarioRepo,
-        IEmailService emailService)
+        IEmailService emailService,
+        ITemplateRenderer templateRenderer)
     {
         _resetRepo = resetRepo;
         _usuarioRepo = usuarioRepo;
         _emailService = emailService;
+        _templateRenderer = templateRenderer;
     }
 
     public void GenerateResetToken(TycBaseContext context, string usuaLogin, string email, string frontendBaseUrl)
@@ -56,8 +59,9 @@ public class PasswordResetService : IPasswordResetService
 
         var resetLink = $"{frontendBaseUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email)}";
         var htmlBody = BuildResetEmailHtml(usuario.UsuaNombre, resetLink);
+        var vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, []);
 
-        _emailService.EnviarEmailAsync(email, "Recuperación de contraseña", htmlBody);
+        _emailService.EnviarEmailAsync(email, "Recuperación de contraseña", vista);
     }
 
     public void ResetPassword(TycBaseContext context, string token, string email, string newPassword)
