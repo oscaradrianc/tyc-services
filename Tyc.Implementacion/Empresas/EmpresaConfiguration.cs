@@ -8,6 +8,7 @@ namespace Tyc.Implementacion.Empresas;
 public class EmpresaConfiguration : IEmpresaConfiguration
 {
     private readonly string _defaultLogoBase64;
+    private readonly string _anatoLogo;
 
     public EmpresaConfiguration(IHostEnvironment env)
     {
@@ -24,7 +25,21 @@ public class EmpresaConfiguration : IEmpresaConfiguration
             // Opcional: Log o fallback si el archivo no existe
             _defaultLogoBase64 = string.Empty;
         }
+
+        var pathAnato = Path.Combine(env.ContentRootPath, "Resources", "logoAnato.png");
+
+        if (File.Exists(pathAnato))
+        {
+            byte[] imageBytesAnato = File.ReadAllBytes(pathAnato);
+            _anatoLogo = "data:image/png;base64," + Convert.ToBase64String(imageBytesAnato);
+        }
+        else
+        {
+            // Opcional: Log o fallback si el archivo no existe
+            _anatoLogo = string.Empty;
+        }
     }
 
     public string GetDefaultLogoBase64() => _defaultLogoBase64;
+    public string GetLogoAnato() => _anatoLogo;
 }

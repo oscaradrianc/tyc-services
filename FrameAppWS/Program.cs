@@ -1,4 +1,5 @@
 using AdministradorCore.BaseHost;
+using FrameAppWS.Workers;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
@@ -23,12 +24,15 @@ using Tyc.Implementacion.Consentimientos.Repositories;
 using Tyc.Implementacion.Email;
 using Tyc.Implementacion.Empresas;
 using Tyc.Implementacion.Empresas.Repositories;
+using Tyc.Implementacion.Encuestas;
+using Tyc.Implementacion.Encuestas.Repositories;
 using Tyc.Implementacion.Firmas.Repositories;
 using Tyc.Implementacion.Pdf;
 using Tyc.Implementacion.Textos;
 using Tyc.Implementacion.Textos.Repositories;
 using Tyc.Implementacion.Usuarios;
 using Tyc.Implementacion.Usuarios.Repositories;
+using Tyc.Interface;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Services;
@@ -82,12 +86,14 @@ public class Program
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
             builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+            builder.Services.AddScoped<IEncuestaRepository, EncuestaRepository>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
             builder.Services.AddScoped<ITextoService, TextosBL>();
             builder.Services.AddScoped<IEmpresaService, EmpresasBL>();
             builder.Services.AddScoped<IUsuarioService, UsuariosBL>();
             builder.Services.AddScoped<IPdfService, PdfService>();
+            builder.Services.AddScoped<IEncuestaService, EncuestasBL>();
 
             builder.Services.AddSingleton<IEmpresaConfiguration, EmpresaConfiguration>();
 
@@ -112,6 +118,7 @@ public class Program
             });
 
             builder.Services.AddHostedService<MonitoringWorker>();
+            builder.Services.AddHostedService<NotificacionEncuestasWorker>();
 
             var settings = Settings.GetInstance().SetConfiguration(builder.Configuration);
             settings.SetDbConfig(true);

@@ -3,6 +3,8 @@ using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
 
 namespace Tyc.Implementacion.Empresas.Repositories;
 
@@ -182,5 +184,13 @@ public class EmpresaRepository : IEmpresaRepository
             query = query.Where(x => x.EmpresaId != excludeId.Value);
 
         return await Task.Run(() => query.Any());
+    }
+
+    public async Task<List<int>> GetIdsEmpresaPorGuis(TycBaseContext context, List<Guid> guis)
+    {
+        return await Task.Run(() => context.GetTable<Empresa>()
+            .Where(e => guis.Contains((Guid)e.Guid))
+            .Select(e => e.EmpresaId)
+            .ToList());
     }
 }

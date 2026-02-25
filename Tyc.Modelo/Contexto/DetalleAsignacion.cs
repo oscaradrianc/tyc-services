@@ -16,4 +16,12 @@ public class DetalleAsignacion
 
     [Column(Name = "estado")]
     public string Estado { get; set; }
+    [Column(Name = "notificado")]
+    public string Notificado { get; set; } = "N";
+
+    [Column(Name = "nrointentos")]
+    public short NroIntentos { get; set; } = 0;
+
+    [Column(Name = "errores")]
+    public string Errores { get; set; }
 }

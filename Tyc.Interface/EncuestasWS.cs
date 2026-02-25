@@ -3,6 +3,7 @@ using ServiceStack;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.General;
 using Tyc.Interface.Services;
@@ -21,7 +22,7 @@ public class EncuestasWS : Service
     }
 
     // Endpoint para CREAR LA ASIGNACIÓN (La Campaña)
-    public ApiResponse<int> Post(CreateAsignacionRQ request)
+    public async Task<ApiResponse<int>> Post(CreateAsignacionRQ request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -32,7 +33,7 @@ public class EncuestasWS : Service
 
             int usuarioId = int.Parse(userSession.IDUsuario);
 
-            var idGenerado = _encuestaService.CrearAsignacion(
+            var idGenerado = await _encuestaService.CrearAsignacion(
                 dbSigo,
                 request.EncuestaId,
                 request.Nombre,
@@ -75,6 +76,26 @@ public class EncuestasWS : Service
                 Success = true,
                 Mensaje = "Respuestas guardadas exitosamente",
                 Data = idRespuestaGenerada
+            };
+        }
+    }
+
+    public ApiResponse<EncuestaEstructuraRS> Get(GetEncuestaEstructuraRQ request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var estructura = _encuestaService.ObtenerEstructuraEncuesta(dbSigo, request.EncuestaId);
+
+            if (estructura == null)
+                throw HttpError.NotFound($"La encuesta con ID {request.EncuestaId} no fue encontrada o está inactiva.");
+
+            return new ApiResponse<EncuestaEstructuraRS>
+            {
+                Success = true,
+                Mensaje = "Estructura obtenida exitosamente",
+                Data = estructura
             };
         }
     }

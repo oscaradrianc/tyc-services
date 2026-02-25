@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
@@ -17,4 +19,5 @@ public interface IEmpresaRepository
     Task<Empresa> UpdateAsync(TycBaseContext context, Empresa entity);
     Task<bool> ExistsAsync(TycBaseContext context, int id);
     Task<bool> ExisteSubdominioAsync(TycBaseContext context, string subdominio, int? excludeId = null);
+    Task<List<int>> GetIdsEmpresaPorGuis(TycBaseContext context, List<Guid> guis);
 }

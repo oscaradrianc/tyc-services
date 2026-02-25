@@ -28,6 +28,9 @@ namespace Tyc.Modelo
         public Table<DetalleAsignacion> DetalleAsignaciones { get; set; }
         public Table <RespuestasEncuesta> RespuestasEncuestas { get; set; }
         public Table <RespuestaDetalle> respuestaDetalles { get; set; }
+        public Table<Encuesta> Encuestas { get; set; }
+        public Table<Pregunta> Preguntas { get; set; }
+        public Table<OpcionPregunta> OpcionesPregunta{ get; set; }
 
     }
 

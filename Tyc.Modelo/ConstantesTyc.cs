@@ -6,5 +6,6 @@
         public const string tipoTextoTextoAlternoCorreo = "CORREO_PIE";
         public const string TEMPLATE_CONSENTIMIENTO = "consentimiento-creado";        
         public const string TEMPLATE_CONSENTIMIENTO_FIRMADO = "consentimiento-firmado";
+        public const string TEMPLATE_NUEVA_ENCUESTA = "mail-invitacion";
     }
 }

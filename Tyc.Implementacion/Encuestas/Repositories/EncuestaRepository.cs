@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using Tyc.Interface.Repositories;
+using Tyc.Interface.Request;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
@@ -86,5 +87,76 @@ public class EncuestaRepository : IEncuestaRepository
                 throw;
             }
         }
+    }
+
+    public List<DetalleAsignacion> ObtenerNotificacionesPendientes(TycBaseContext context, int maxIntentos)
+    {
+        // Traemos los que no han sido notificados y no han superado el límite de intentos
+        return context.GetTable<DetalleAsignacion>()
+            .Where(d => d.Notificado == "N" && d.NroIntentos < maxIntentos)
+            .ToList();
+    }
+
+    public void ActualizarEstadoNotificacion(TycBaseContext context, int idDetalle, string notificado, short intentos, string error)
+    {
+        var detalle = context.GetTable<DetalleAsignacion>().FirstOrDefault(d => d.IdDetalle == idDetalle);
+        if (detalle != null)
+        {
+            detalle.Notificado = notificado;
+            detalle.NroIntentos = intentos;
+            // Cortamos el error si es muy largo para evitar que reviente la base de datos
+            detalle.Errores = error?.Length > 500 ? error.Substring(0, 500) : error;
+            context.SubmitChanges();
+        }
+    }
+
+    public EncuestaEstructuraRS ObtenerEstructuraEncuesta(TycBaseContext context, int encuestaId)
+    {
+        // 1. Obtener la encuesta cabecera
+        var encuesta = context.GetTable<Encuesta>()
+            .FirstOrDefault(e => e.IdEncuesta == encuestaId && e.Estado == "A");
+
+        if (encuesta == null)
+            return null;
+
+        // 2. Obtener todas las preguntas de esa encuesta ordenadas
+        var preguntas = context.GetTable<Pregunta>()
+            .Where(p => p.EncuestaId == encuestaId)
+            .OrderBy(p => p.Orden)
+            .ToList();
+
+        var preguntaIds = preguntas.Select(p => p.IdPregunta).ToList();
+
+        // 3. Obtener todas las opciones que pertenezcan a las preguntas anteriores
+        var opciones = context.GetTable<OpcionPregunta>()
+            .Where(o => preguntaIds.Contains(o.PreguntaId))
+            .ToList();
+
+        // 4. Mapear todo hacia la estructura anidada DTO
+        var resultado = new EncuestaEstructuraRS
+        {
+            IdEncuesta = encuesta.IdEncuesta,
+            Nombre = encuesta.Nombre,
+            TipoEncuesta = encuesta.TipoEncuesta,
+            Descripcion = encuesta.Descripcion,
+            Preguntas = preguntas.Select(p => new PreguntaEstructuraRS
+            {
+                IdPregunta = p.IdPregunta,
+                Pregunta = p.TextoPregunta,
+                TipoPregunta = p.TipoPregunta,
+                Orden = p.Orden,
+                EsObligatoria = p.EsObligatoria,
+                ReglasValidacion = p.ReglasValidacion,
+                // Filtramos las opciones que le pertenecen solo a esta pregunta
+                Opciones = opciones.Where(o => o.PreguntaId == p.IdPregunta).Select(o => new OpcionEstructuraRS
+                {
+                    IdOpcion = o.IdOpcion,
+                    Etiqueta = o.Etiqueta,
+                    ExtraTexto = o.ExtraTexto
+                }).ToList()
+            }).ToList()
+        };
+
+        return resultado;
     }
 }
