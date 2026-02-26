@@ -2,6 +2,7 @@
 using Tyc.Interface.Request;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Interface.Repositories;
 
@@ -12,4 +13,5 @@ public interface IEncuestaRepository
     List<DetalleAsignacion> ObtenerNotificacionesPendientes(TycBaseContext context, int maxIntentos);
     void ActualizarEstadoNotificacion(TycBaseContext context, int idDetalle, string notificado, short intentos, string error);
     EncuestaEstructuraRS ObtenerEstructuraEncuesta(TycBaseContext context, int encuestaId);
+    DatosEncuesta ObtenerEncabezaEncuestaPorIdAsigancion(TycBaseContext context, int idDetalleAsignacion);
 }

@@ -46,6 +46,9 @@
 	  <None Update="Templates\Logo.png">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <None Update="Templates\mail-agradecimiento.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="Templates\mail-invitacion.html">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

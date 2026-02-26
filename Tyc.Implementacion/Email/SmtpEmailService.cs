@@ -1,14 +1,17 @@
 ﻿
-using System;
-using System.IO;
+using AdministradorCore.Cifrar;
+using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
+using System.IO;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Services;
+using Tyc.Modelo;
 using Tyc.Modelo.Configuracion;
 
 namespace Tyc.Implementacion.Email;
@@ -46,9 +49,12 @@ public class SmtpEmailService : IEmailService
 
             using var smtpClient = new SmtpClient(_config.SmtpHost, _config.SmtpPort);
 
+            string usuarioSmtp = new BaseCifrado(ConstantesTyc.llaveParametroLink).Decrypt256(_config.SmtpUsuario, true);
+            string claveSmtp = new BaseCifrado(ConstantesTyc.llaveParametroLink).Decrypt256(_config.SmtpClave, true);
+
             // Orden crítico para AWS SES
             smtpClient.UseDefaultCredentials = false;
-            smtpClient.Credentials = new NetworkCredential(_config.SmtpUsuario, _config.SmtpClave);
+            smtpClient.Credentials = new NetworkCredential(usuarioSmtp, claveSmtp);
             smtpClient.EnableSsl = _config.SmtpUseSsl;
             smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtpClient.Timeout = 30000;

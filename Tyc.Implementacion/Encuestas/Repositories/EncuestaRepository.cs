@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Servpub.Modelo.Tipos.Lecturas;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -6,7 +7,9 @@ using System.Text;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Modelo;
+using Tyc.Modelo.Consultas;
 using Tyc.Modelo.Contexto;
+using Tyc.Modelo.Tipos;
 
 namespace Tyc.Implementacion.Encuestas.Repositories;
 
@@ -73,7 +76,7 @@ public class EncuestaRepository : IEncuestaRepository
                                         .SingleOrDefault(x => x.IdDetalle == cabeceraRespuesta.DetalleId);
                 if (detalleAsignacion != null)
                 {
-                    detalleAsignacion.Estado = "COMPLETED";
+                    detalleAsignacion.Estado = "COMPLETADO";
                 }
 
                 context.SubmitChanges();
@@ -158,5 +161,21 @@ public class EncuestaRepository : IEncuestaRepository
         };
 
         return resultado;
+    }
+
+    public DatosEncuesta ObtenerEncabezaEncuestaPorIdAsigancion(TycBaseContext context, int idDetalleAsignacion)
+    {
+        var encuesta = (from e in context.GetTable<Encuesta>()
+                        join a in context.GetTable<AsignacionEncuesta>() on e.IdEncuesta equals a.EncuestaId
+                        join d in context.GetTable<DetalleAsignacion>() on a.IdAsignacion equals d.AsignacionId
+                        where d.IdDetalle == idDetalleAsignacion                      
+                        select new DatosEncuesta
+                        {
+                            IdEncuesta = e.IdEncuesta,
+                            Nombre = e.Nombre,
+                            TipoEncuesta = e.TipoEncuesta,
+                            Descripcion = e.Descripcion
+                        }).FirstOrDefault();
+        return encuesta;
     }
 }

@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using AngleSharp.Dom;
+using DevExpress.CodeParser;
+using Microsoft.Extensions.Logging;
+using Servpub.Modelo.Tipos.Lecturas;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,10 +25,11 @@ public class EncuestasBL : IEncuestaService
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IEmpresaConfiguration _empresaConfig;
     private readonly IEmailService _emailService;
+    private readonly IUsuarioRepository _usuarioRepository;
 
     public EncuestasBL(IEncuestaRepository encuestaRepository, ILogger<EncuestasBL> logger, 
         IEmpresaRepository empresaRepository, ITemplateRenderer templateRenderer, IEmpresaConfiguration empresaConfig,
-        IEmailService emailService)
+        IEmailService emailService, IUsuarioRepository usuarioRepository)
     {
         _encuestaRepository = encuestaRepository;
         _logger = logger;
@@ -33,6 +37,7 @@ public class EncuestasBL : IEncuestaService
         _templateRenderer = templateRenderer;
         _empresaConfig = empresaConfig;
         _emailService = emailService;
+        _usuarioRepository = usuarioRepository;
     }
 
     public async Task<int> CrearAsignacion(TycBaseContext context, int encuestaId, string nombre, DateTime fechaLimite, 
@@ -67,15 +72,24 @@ public class EncuestasBL : IEncuestaService
         }
     }
 
-    public int GuardarRespuesta(TycBaseContext context, int detalleId, List<RespuestaItemRQ> respuestas, int usuarioId)
+    public async Task<int> GuardarRespuesta(TycBaseContext context, int empresaId, int detalleId, List<RespuestaItemRQ> respuestas, int usuarioId)
     {
         try
         {
+            //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
+            ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+            ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+            if (!concatenado.StartsWith(prefijo))
+                throw new InvalidOperationException("Prefijo inválido");
+
+            int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+
             var cabeceraRespuesta = new RespuestasEncuesta
             {
                 DetalleId = detalleId,
                 FechaRespuesta = DateTime.Now,
-                UsuaResponde = usuarioId
+                UsuaResponde = idUsuario
             };
 
             var detalles = respuestas.Select(r => new RespuestaDetalle
@@ -86,7 +100,35 @@ public class EncuestasBL : IEncuestaService
                 ValorNumerico = r.ValorNumerico
             }).ToList();
 
-            return _encuestaRepository.GuardarRespuestasCliente(context, cabeceraRespuesta, detalles);
+            int respuesta = _encuestaRepository.GuardarRespuestasCliente(context, cabeceraRespuesta, detalles);
+
+            if (respuesta > 0) //Si guarda con existo envia correo de agradecimiento.
+            {
+                var encuesta = _encuestaRepository.ObtenerEncabezaEncuestaPorIdAsigancion(context, detalleId);
+                var usuario = _usuarioRepository.GetById(context, idUsuario);
+
+                var variables = new Dictionary<string, string>
+                {
+
+                    { "NombreEncuesta", encuesta.Nombre }
+                };
+
+                // 4. Renderizar y Enviar
+                var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_AGRADECIMIENTO_ENCUESTA, variables);
+                var logo = _empresaConfig.GetLogoAnato();
+                byte[] bytesLogo = ConvertirBase64ABytes(logo);
+
+                var listaImagenes = new List<ImagenEnLinea>
+                    {
+                        new (bytesLogo, "LogoAnato", "image/png"),
+                    };
+
+                AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
+
+                await _emailService.EnviarEmailAsync(usuario.UsuaEmail, "Gracias por su participación", vista);
+            }
+       
+            return respuesta;
         }
         catch (Exception ex)
         {
@@ -108,7 +150,7 @@ public class EncuestasBL : IEncuestaService
             try
             {
                 // 1. Consultar la empresa para sacar el email
-                var empresa = context.GetTable<Empresa>().FirstOrDefault(e => e.EmpresaId == detalle.EmprEmpr);
+                var empresa = context.GetTable<Modelo.Contexto.Empresa>().FirstOrDefault(e => e.EmpresaId == detalle.EmprEmpr);
                 // 2. Consultar la cabecera para sacar el nombre de la encuesta y fecha límite
                 var asignacion = context.GetTable<AsignacionEncuesta>().FirstOrDefault(a => a.IdAsignacion == detalle.AsignacionId);
 

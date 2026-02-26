@@ -53,7 +53,7 @@ public class EncuestasWS : Service
     }
 
     // Endpoint para GUARDAR LAS RESPUESTAS (Del cliente)
-    public ApiResponse<int> Post(SaveRespuestaRQ request)
+    public async Task<ApiResponse<int>> PostAsync(SaveRespuestaRQ request)
     {
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
@@ -63,9 +63,11 @@ public class EncuestasWS : Service
                 throw HttpError.BadRequest("No se enviaron respuestas válidas.");
 
             int usuarioId = int.Parse(userSession.IDUsuario);
+            int empresaId = (int)userSession.IDEmpresa;
 
-            var idRespuestaGenerada = _encuestaService.GuardarRespuesta(
+            var idRespuestaGenerada = await _encuestaService.GuardarRespuesta(
                 dbSigo,
+                empresaId,
                 request.DetalleId,
                 request.Respuestas,
                 usuarioId
