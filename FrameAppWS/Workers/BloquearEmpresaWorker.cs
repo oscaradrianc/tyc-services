@@ -8,15 +8,16 @@ using System.Threading.Tasks;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 
+
 namespace FrameAppWS.Workers; // O el namespace de tus workers
 
-public class NotificacionEncuestasWorker : BackgroundService
+public class BloquearEmpresaWorker : BackgroundService
 {
-    private readonly ILogger<NotificacionEncuestasWorker> _logger;
+    private readonly ILogger<BloquearEmpresaWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
 
-    public NotificacionEncuestasWorker(ILogger<NotificacionEncuestasWorker> logger, IServiceProvider serviceProvider, 
+    public BloquearEmpresaWorker(ILogger<BloquearEmpresaWorker> logger, IServiceProvider serviceProvider, 
         IConfiguration configuration)
     {
         _logger = logger;
@@ -24,12 +25,61 @@ public class NotificacionEncuestasWorker : BackgroundService
         _configuration = configuration;
     }
 
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // 1. Calcular cuánto falta para las 6:00 AM
+            DateTime ahora = DateTime.Now;
+            DateTime proximaEjecucion = ahora.Date.AddHours(6);
+
+            // Si ya pasaron las 6 AM hoy, programar para mañana
+            if (ahora >= proximaEjecucion)
+            {
+                proximaEjecucion = proximaEjecucion.AddDays(1);
+            }
+
+            TimeSpan tiempoHastaSeisAM = proximaEjecucion - ahora;
+
+            // 2. Esperar hasta la primera ejecución
+            await Task.Delay(tiempoHastaSeisAM, stoppingToken);
+           
+            // 3. Iniciar el temporizador con un intervalo de 24 horas
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromDays(1));
+
+            do
+            {
+                // --- TU LÓGICA AQUÍ ---
+                Console.WriteLine($"Ejecutando tarea programada: {DateTime.Now}");
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var encuestaService = scope.ServiceProvider.GetRequiredService<IEncuestaService>();
+
+                    var settings = solg.lib.settings.Settings.GetInstance();
+                    settings.SetDbConfig(true);
+
+                    string connectionString = settings.GetConnection("Consentimiento").connectionString;
+                    var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+                    using (TycBaseContext dbContext = TycContext.DataContext(connectionString, motorBD))
+                    {
+                        await encuestaService.ProcesarBloquearEmpresaAsync(dbContext);
+                    }
+                }
+
+                // Si necesitas realizar una operación asíncrona larga, hazla aquí
+
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
+        }
+    }
+
+    /*protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Worker de Notificaciones de Encuesta iniciado.");
 
         // Se ejecuta cada 1 hora. Puedes cambiarlo a TimeSpan.FromMinutes(15), etc.
-        using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMinutes(120));
+        using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMinutes(60));
 
         try
         {
@@ -65,5 +115,5 @@ public class NotificacionEncuestasWorker : BackgroundService
         {
             _logger.LogCritical(ex, "Error fatal en el Worker de Notificaciones.");
         }
-    }
+    }*/
 }

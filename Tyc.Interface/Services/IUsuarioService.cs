@@ -1,4 +1,5 @@
-﻿using Administrador.Modelo.Tipos;
+﻿using System;
+using Administrador.Modelo.Tipos;
 using Administrador.ServiceLogs.Auth;
 using Tyc.Interface.Response.General;
 using Tyc.Interface.Response.Usuarios;
@@ -13,5 +14,6 @@ namespace Tyc.Interface.Services
         ApiResponse<UsuarioRS> ActualizarUsuario(TycBaseContext context, Modelo.Contexto.Usuario usuario);
         ChangePasswordRS CambiarClave(TycBaseContext context, ChangePasswordRQ pChangePassUserRQ, CustomUserSession customUserSession, string IP);
         ApiResponse<bool> EncriptarPassDefecto(TycBaseContext context, int idUsuario);
+        ApiResponse<PermisosUsuarioRS> GetPermisosUsuario(TycBaseContext context, int empresaId, int usuarioId);
     }
 }

@@ -14,4 +14,5 @@ public interface IEncuestaRepository
     void ActualizarEstadoNotificacion(TycBaseContext context, int idDetalle, string notificado, short intentos, string error);
     EncuestaEstructuraRS ObtenerEstructuraEncuesta(TycBaseContext context, int encuestaId);
     DatosEncuesta ObtenerEncabezaEncuestaPorIdAsigancion(TycBaseContext context, int idDetalleAsignacion);
+    List<EmpresasBloquear> ObtenerEmpresaBloquear(TycBaseContext context);
 }

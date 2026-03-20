@@ -34,7 +34,25 @@ public interface IConsentimientoRepository
     Task<bool> ExistsAsync(TycBaseContext context, Guid id);
     Task<TipoIdentificacion> GetTipoIdentificacionAsync(TycBaseContext context, int empresaId, int tipoDocumentoId);
     Task<List<TipoIdentificacion>> GetTiposIdentificacionAsync(TycBaseContext context, int empresaId);
-    Task<List<Consentimiento>> ListarPorFiltrosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId);
-    Task<List<ListaConsentimientos>> ListarPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, DateTime? FechaFinal, string estado);
+    Task<List<Consentimiento>> ListarPorFiltrosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId, int usuarioId);
+    Task<List<ListaConsentimientos>> ListarPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, DateTime? FechaFinal, 
+        string estado, int usuarioId);
+    Task<bool> EliminarConsentimientoAsync(TycBaseContext context, Guid id);
+
+    // Nuevo método para período
+    Task<List<Consentimiento>> GetConsentimientosPorPeriodoAsync(
+        TycBaseContext context, 
+        int empresaId, 
+        int año, 
+        int mes,
+        string estado);
+
+    // Nuevo método para validar existencia
+    Task<Consentimiento> BuscarConsentimientoExistenteAsync(
+        TycBaseContext context,
+        int empresaId,
+        string identificacionCifrada,
+        string tipoPersona,
+        List<int> politicasNuevas);
 }
 

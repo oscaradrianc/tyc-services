@@ -1,15 +1,12 @@
 ﻿using AdministradorCore.Cifrar;
-using Amazon.Runtime.Internal.Transform;
+using AngleSharp.Dom;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Mail;
-using System.Net.Mime;
-using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
@@ -114,7 +111,7 @@ public class ConsentimientosBL : IConsentimientoService
         return response;
     }
 
-    public async Task<Guid> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity)
+    public async Task<(Guid? Id, ConsentimientoExistenteRS Existente)> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity, bool forceInsert = false)
     {
         //Guardar datos ANTES de cifrar (para el email)
         string emailDestinatario = entity.EmailCliente;
@@ -148,6 +145,51 @@ public class ConsentimientosBL : IConsentimientoService
         if (empresa == null)
         {
             _logger.LogWarning("No se encontró empresa {EmpresaId}", entity.EmpresaId);
+            throw new InvalidOperationException($"Empresa {entity.EmpresaId} no encontrada");
+        }
+
+        // VALIDACIÓN DE EXISTENCIA
+        bool debeValidar = (entity.TipoPersona == "N" && empresa.ValidaExistenciaPersonaNatural == "SI") ||
+                           (entity.TipoPersona == "J" && empresa.ValidaExistenciaPersonaJuridica == "SI");
+
+        if (debeValidar && !forceInsert)
+        {
+            // Obtener todas las políticas activas de la empresa
+            var textosActivos = await _textoRepository.GetByEmpresaAsync(context, entity.EmpresaId, true);
+            var politicasIds = textosActivos.Select(t => t.TextText).ToList();
+
+            // Cifrar identificación para búsqueda
+            var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
+            string identificacionCifrada = cifrador.Cifrar(entity.IdentificacionCliente);
+
+            // Buscar consentimiento existente
+            var existente = await _repository.BuscarConsentimientoExistenteAsync(
+                context,
+                entity.EmpresaId,
+                identificacionCifrada,
+                entity.TipoPersona,
+                politicasIds);
+
+            if (existente != null)
+            {
+                _logger.LogInformation(
+                    "Se encontró consentimiento existente {ConsentimientoId} para identificación {Identificacion}",
+                    existente.GuId,
+                    entity.IdentificacionCliente);
+
+                string mensaje = existente.Estado == "P"
+                    ? "Ya existe un consentimiento pendiente de firma para esta persona con políticas vigentes."
+                    : "Ya existe un consentimiento firmado para esta persona con políticas vigentes.";
+
+                return (null, new ConsentimientoExistenteRS
+                {
+                    Existe = true,
+                    Mensaje = mensaje,
+                    ConsentimientoExistenteId = existente.GuId,
+                    EstadoConsentimiento = existente.Estado,
+                    FechaCreacion = existente.FechaCreacion
+                });
+            }
         }
 
         var tiposRequeridos = new List<string> { ConstantesTyc.tipoTextoSaludoCorreo, ConstantesTyc.tipoTextoTextoAlternoCorreo };
@@ -282,7 +324,7 @@ public class ConsentimientosBL : IConsentimientoService
                 consentimientoId);
         }
 
-        return consentimientoId;
+        return (consentimientoId, null);
     }
 
     public async Task<StatusResult> ActualizarConsentimientoConFirmaAsync(TycBaseContext context, ActualizarConsentimientoConFirma request)
@@ -870,7 +912,7 @@ public class ConsentimientosBL : IConsentimientoService
     // Agregar a ConsentimientosBL.cs
 
     public async Task<List<ConsentimientoListItemRS>> ListarConsentimientosAsync(TycBaseContext context, DateTime? fecha,
-        string estado, int empresaId)
+        string estado, int empresaId, int usuarioId)
     {
         // Validar estado si viene con valor
         if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
@@ -878,7 +920,16 @@ public class ConsentimientosBL : IConsentimientoService
             throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
-        var consentimientos = await _repository.ListarPorFiltrosAsync(context, fecha, estado, empresaId);
+        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
+        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+        if (!concatenado.StartsWith(prefijo))
+            throw new InvalidOperationException("Prefijo inválido");
+
+        int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+
+        var consentimientos = await _repository.ListarPorFiltrosAsync(context, fecha, estado, empresaId, idUsuario);
         var resultado = new List<ConsentimientoListItemRS>();
 
         foreach (var entity in consentimientos)
@@ -916,14 +967,23 @@ public class ConsentimientosBL : IConsentimientoService
     int? empresaId,
     DateTime? fechaInicial,
     DateTime? fechaFinal,
-    string estado)
+    string estado, int usuarioId, string terminoBusqueda)
     {
         if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
         {
             throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
-        var consentimientos = await _repository.ListarPorEmpresaAsync(context, empresaId, fechaInicial, fechaFinal, estado);
+        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
+        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+        if (!concatenado.StartsWith(prefijo))
+            throw new InvalidOperationException("Prefijo inválido");
+
+        int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+
+        var consentimientos = await _repository.ListarPorEmpresaAsync(context, empresaId, fechaInicial, fechaFinal, estado, idUsuario);
 
         // Mapster no es async por defecto, pero podemos usar Select normal luego de obtener la lista async
         var resultado = new List<ConsentimientosRS>();
@@ -978,6 +1038,20 @@ public class ConsentimientosBL : IConsentimientoService
             });
         }
         
+        if (!string.IsNullOrWhiteSpace(terminoBusqueda))
+        {
+            var busqueda = terminoBusqueda.Trim().ToLower();
+            resultado = resultado.Where(x => 
+                (x.Nombres?.ToLower().Contains(busqueda) ?? false) ||
+                (x.Apellidos?.ToLower().Contains(busqueda) ?? false) ||
+                (x.RazonSocial?.ToLower().Contains(busqueda) ?? false) ||
+                (x.Identificacion?.ToLower().Contains(busqueda) ?? false) ||
+                (x.Email?.ToLower().Contains(busqueda) ?? false) ||
+                (x.Telefono?.ToLower().Contains(busqueda) ?? false) ||
+                (x.Referencia?.ToLower().Contains(busqueda) ?? false)
+            ).ToList();
+        }
+
         return resultado;
     }
 
@@ -1148,6 +1222,11 @@ public class ConsentimientosBL : IConsentimientoService
         if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
             return uri.Host.Split('.')[0];
         return value;
+    }
+
+    public async Task<bool> EliminarConsentimientoAsync(TycBaseContext context, Guid id)
+    {
+        return await _repository.EliminarConsentimientoAsync(context, id);
     }
 }
 

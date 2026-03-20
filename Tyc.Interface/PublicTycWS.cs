@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
-using solg.lib.settings;
 using System;
-using System.Data.SqlTypes;
 using System.Net;
 using System.Threading.Tasks;
 using Tyc.Interface.Request;

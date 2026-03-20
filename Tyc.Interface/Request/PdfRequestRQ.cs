@@ -1,9 +1,5 @@
 ﻿using ServiceStack;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tyc.Interface.Request;
 
@@ -12,4 +8,12 @@ public class GetConsentimientoPdf : IReturn<byte[]>
 {
     public Guid ConsentimientoId { get; set; }
     public int TextoId { get; set; }
+}
+
+[Route("/consentimientos/periodo/{Periodo}/empresa/{EmpresaId}/pdf", "GET")]
+public class GetConsentimientosPorPeriodoPdf : IReturn<byte[]>
+{
+    public string Periodo { get; set; }
+    public int EmpresaId { get; set; }
+    public string Estado { get; set; } = "T";
 }

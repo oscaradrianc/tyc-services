@@ -1,5 +1,4 @@
 ﻿using Devart.Data.Linq.Mapping;
-using ServiceStack.DataAnnotations;
 using System;
 using System.Runtime.Serialization;
 

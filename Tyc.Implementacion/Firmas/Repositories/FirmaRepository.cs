@@ -2,9 +2,7 @@
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 using System.Linq;
-using System;
 using System.Threading.Tasks;
-using Devart.Data.Linq;
 
 namespace Tyc.Implementacion.Firmas.Repositories;
 

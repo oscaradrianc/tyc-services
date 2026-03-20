@@ -1,7 +1,6 @@
 ﻿using Administrador.ServiceLogs.Auth;
 using MapsterMapper;
 using ServiceStack;
-using ServiceStack.Host;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Tyc.Interface.Response.Textos;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
-using static Tyc.Modelo.TycBaseContext;
 
 namespace Tyc.Interface;
 

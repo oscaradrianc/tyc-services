@@ -23,16 +23,19 @@ public class TycWS : Service
     private readonly IMapper _mapper;
     private readonly IConsentimientoService _consentimientoService;
     private readonly IPdfService _pdfService;
+    private readonly IUsuarioService _usuarioService;
 
     public TycWS(
         IConsentimientoService consentimientoService,
         IConsentimientoRepository repository,
         IMapper mapper,
-        IPdfService pdfService)
+        IPdfService pdfService,
+        IUsuarioService usuarioService)
     {
         _mapper = mapper;
         _consentimientoService = consentimientoService;
         _pdfService = pdfService;
+        _usuarioService = usuarioService;
     }
 
     public async Task<ApiResponse<ConfirmacionConsentimientoRS>> Get(GetConsentimiento request)
@@ -55,27 +58,39 @@ public class TycWS : Service
         }
     }
 
-    public async Task<ApiResponse<Guid>> Post(ConsentimientoRQ request)
-    {       
-        // UserSession va por defecto           
+    public async Task<object> Post(ConsentimientoRQ request)
+    {
+        // UserSession va por defecto
         CustomUserSession userSession = SessionAs<CustomUserSession>();
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Consentimiento>(request);
             entity.UsuarioId = int.Parse(userSession.IDUsuario);
-            entity.EmpresaId = (int)userSession.IDEmpresa; 
+            entity.EmpresaId = (int)userSession.IDEmpresa;
 
-            var id = await _consentimientoService.CrearConsentimientoAsync(dbSigo, entity);
+            var (id, existente) = await _consentimientoService.CrearConsentimientoAsync(
+                dbSigo,
+                entity,
+                request.ForceInsert);
+
+            // Si hay conflicto, retornar 409
+            if (existente != null)
+            {
+                Response.StatusCode = (int)System.Net.HttpStatusCode.Conflict;
+                return new HttpResult(existente, "application/json")
+                {
+                    StatusCode = System.Net.HttpStatusCode.Conflict
+                };
+            }
 
             return new ApiResponse<Guid>
             {
-                Data = id,
+                Data = id.Value,
                 Mensaje = "Consentimiento creado exitosamente",
                 Success = true
             };
         }
-
     }
 
     public async Task<ApiResponse<bool>> Put(ActualizarConsentimientoConFirma request)
@@ -118,7 +133,7 @@ public class TycWS : Service
                 dbSigo,
                 request.Fecha,
                 request.Estado,
-                Convert.ToInt32(userSession.IDEmpresa)
+                Convert.ToInt32(userSession.IDEmpresa), int.Parse(userSession.IDUsuario)
             );
 
             return new ApiResponse<List<ConsentimientoListItemRS>>
@@ -141,7 +156,9 @@ public class TycWS : Service
                 request.EmpresaId,
                 request.FechaInicial,
                 request.FechaFinal,
-                request.Estado
+                request.Estado,
+                int.Parse(userSession.IDUsuario),
+                request.TerminoBusqueda
             );
 
             return new ApiResponse<List<ConsentimientosRS>>
@@ -169,9 +186,62 @@ public class TycWS : Service
             {
                 Headers =
             {
-                // inline = ver en navegador, attachment = forzar descarga
-                ["Content-Disposition"] = $"inline; filename=consentimiento_{request.ConsentimientoId}.pdf"
             }
+            };
+        }
+    }
+
+    public async Task<ApiResponse<bool>> Delete(DeleteConsentimientoRQ request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var permisos = _usuarioService.GetPermisosUsuario(dbSigo, Convert.ToInt32(userSession.IDEmpresa), int.Parse(userSession.IDUsuario));
+            
+            if (!permisos.Success || permisos.Data.UsuaPuedeCrearUsuariosAdmin != "SI")
+            {
+                throw HttpError.Unauthorized("El usuario no tiene permisos para eliminar registros.");
+            }
+
+            // Verify if it exists
+            var confirmacion = await _consentimientoService.ObtenerConfirmacionConsentimientoAsync(dbSigo, request.Id);
+            if (confirmacion == null)
+            {
+                throw HttpError.NotFound($"Consentimiento {request.Id} no encontrado");
+            }
+
+            var res = await _consentimientoService.EliminarConsentimientoAsync(dbSigo, request.Id);
+
+            return new ApiResponse<bool>
+            {
+                Data = res,
+                Mensaje = res ? "Consentimiento eliminado exitosamente" : "No fue posible eliminar el registro",
+                Success = res
+            };
+        }
+    }
+
+    public async Task<IHttpResult> Get(GetConsentimientosPorPeriodoPdf request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            var pdfBytes = await _pdfService.GenerarConsentimientosPorPeriodoPdfAsync(
+                dbSigo,
+                request.Periodo,
+                request.EmpresaId,
+                request.Estado);
+
+            var nombreArchivo = $"Consentimientos_{request.EmpresaId}_{request.Periodo}.pdf";
+
+            return new HttpResult(pdfBytes, "application/pdf")
+            {
+                Headers =
+                {
+                    ["Content-Disposition"] = $"attachment; filename=\"{nombreArchivo}\""
+                }
             };
         }
     }

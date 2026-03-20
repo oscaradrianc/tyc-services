@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Request;
 using Tyc.Modelo;
@@ -14,4 +13,5 @@ public interface IEncuestaService
     Task<int> GuardarRespuesta(TycBaseContext context, int empresaId, int detalleId, List<Request.RespuestaItemRQ> respuestas, int usuarioId);
     Task ProcesarNotificacionesPendientesAsync(TycBaseContext context);
     EncuestaEstructuraRS ObtenerEstructuraEncuesta(TycBaseContext context, int encuestaId);
+    Task ProcesarBloquearEmpresaAsync(TycBaseContext context);
 }

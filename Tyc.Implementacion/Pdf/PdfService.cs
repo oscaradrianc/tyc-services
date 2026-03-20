@@ -1,7 +1,5 @@
 ﻿// Tyc.Implementacion/Pdf/PdfService.cs
 using AdministradorCore.Cifrar;
-using DevExpress.DataAccess.Native;
-using DevExpress.XtraRichEdit.Import.Doc;
 using HtmlAgilityPack;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -10,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Response.Pdf;
 using Tyc.Interface.Services;
@@ -465,6 +462,36 @@ public class PdfService : IPdfService
         });
     }
 
+    private void ComposeFooterPagina(IContainer container, Empresa empresa)
+    {
+        container.Column(col =>
+        {
+            col.Item().LineHorizontal(1).LineColor(Color.FromHex(ColorBorde));
+
+            col.Item().PaddingTop(5).Row(row =>
+            {
+                row.RelativeItem().Text(text =>
+                {
+                    text.Span($"Documento generado el {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+                        .FontSize(8).FontColor(Color.FromHex(ColorSecundario));
+                });
+
+                row.RelativeItem().AlignRight().Text(text =>
+                {
+                    text.Span(empresa?.Nombre ?? "")
+                        .FontSize(8).FontColor(Color.FromHex(ColorSecundario));
+                });
+            });
+
+            col.Item().AlignRight().Text(text =>
+            {
+                text.CurrentPageNumber().FontSize(8);
+                text.Span(" / ").FontSize(8);
+                text.TotalPages().FontSize(8);
+            });
+        });
+    }
+
     private ConsentimientoPdfData BuildPdfData(
         Consentimiento c, Texto texto, Empresa empresa,
         Firma firma, Usuario usuario, TipoIdentificacion tipoDoc)
@@ -532,5 +559,212 @@ public class PdfService : IPdfService
             // Logo inválido, continuar sin logo
             return null;
         }
+    }
+
+    public async Task<byte[]> GenerarConsentimientosPorPeriodoPdfAsync(
+        TycBaseContext context,
+        string periodo,
+        int empresaId,
+        string estado)
+    {
+        // Validar y parsear período
+        if (string.IsNullOrWhiteSpace(periodo) || periodo.Length != 6)
+            throw new ArgumentException("El período debe tener formato YYYYMM (6 caracteres)");
+
+        if (!int.TryParse(periodo.Substring(0, 4), out int año) ||
+            !int.TryParse(periodo.Substring(4, 2), out int mes) ||
+            mes < 1 || mes > 12)
+            throw new ArgumentException("El período no tiene un formato válido YYYYMM");
+
+        // Validar estado
+        var estadosValidos = new[] { "T", "F", "P", "R" };
+        if (!estadosValidos.Contains(estado?.ToUpper()))
+            throw new ArgumentException("Estado inválido. Valores permitidos: T (Todos), F (Firmados), P (Pendientes), R (Rechazados)");
+
+        // Obtener empresa
+        var empresa = await _empresaRepository.GetByIdAsync(context, empresaId);
+        if (empresa == null)
+            throw new InvalidOperationException($"Empresa {empresaId} no encontrada");
+
+        // Obtener consentimientos
+        var consentimientos = await _consentimientoRepository.GetConsentimientosPorPeriodoAsync(
+            context, empresaId, año, mes, estado);
+
+        if (consentimientos == null || !consentimientos.Any())
+            throw new InvalidOperationException($"No se encontraron consentimientos para el período {periodo} y empresa {empresaId}");
+
+        // Generar PDF
+        return GenerarPdfConsolidado(consentimientos, empresa, periodo, estado, context);
+    }
+
+    private byte[] GenerarPdfConsolidado(
+        List<Consentimiento> consentimientos,
+        Empresa empresa,
+        string periodo,
+        string estado,
+        TycBaseContext context)
+    {
+        var nombreMes = ObtenerNombreMes(periodo);
+        var estadoTexto = ObtenerTextoEstado(estado);
+
+        var document = Document.Create(container =>
+        {
+            // Portada
+            container.Page(page =>
+            {
+                page.Size(PageSizes.Letter);
+                page.Margin(40);
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Grey.Darken3));
+
+                page.Content().Element(c => ComposePortada(c, empresa, nombreMes, periodo, consentimientos.Count, estadoTexto));
+            });
+
+            // Páginas de consentimientos
+            foreach (var consentimiento in consentimientos)
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(40);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Grey.Darken3));
+
+                    page.Header().Element(c => ComposeHeaderPagina(c, consentimiento, empresa));
+                    page.Content().Element(c => ComposeContenidoConsentimiento(c, consentimiento, context));
+                    page.Footer().Element(c => ComposeFooterPagina(c, empresa));
+                });
+            }
+        });
+
+        return document.GeneratePdf();
+    }
+
+    private void ComposePortada(IContainer container, Empresa empresa, string nombreMes, string periodo, int total, string estadoTexto)
+    {
+        container.Column(col =>
+        {
+            // Logo y título
+            col.Item().PaddingTop(100).AlignCenter().Text("REPORTE DE CONSENTIMIENTOS")
+                .FontSize(24).Bold().FontColor(Color.FromHex(ColorPrimario));
+
+            col.Item().PaddingTop(30).AlignCenter().Text($"{nombreMes} {periodo.Substring(0, 4)}")
+                .FontSize(18).FontColor(Color.FromHex(ColorSecundario));
+
+            col.Item().PaddingTop(50).AlignCenter().Text(empresa.Nombre ?? "")
+                .FontSize(16).Bold();
+
+            // Información del reporte
+            col.Item().PaddingTop(60).Element(c =>
+            {
+                c.Background(Color.FromHex(ColorFondo))
+                 .Border(1)
+                 .BorderColor(Color.FromHex(ColorBorde))
+                 .Padding(20)
+                 .Column(infoCol =>
+                 {
+                     infoCol.Item().Text($"Total de consentimientos: {total}")
+                         .FontSize(12).Bold();
+                     infoCol.Item().PaddingTop(10).Text($"Estado filtrado: {estadoTexto}")
+                         .FontSize(11);
+                     infoCol.Item().PaddingTop(10).Text($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+                         .FontSize(11);
+                 });
+            });
+        });
+    }
+
+    private void ComposeHeaderPagina(IContainer container, Consentimiento consentimiento, Empresa empresa)
+    {
+        container.Column(col =>
+        {
+            col.Item().Row(row =>
+            {
+                var logoBytes = TryGetLogoBytes(empresa.LogoBase64);
+                if (logoBytes != null)
+                {
+                    row.ConstantItem(80).Height(50).Image(logoBytes, ImageScaling.FitArea);
+                }
+
+                row.RelativeItem().Column(innerCol =>
+                {
+                    innerCol.Item().AlignRight().Text(empresa.Nombre ?? "")
+                        .FontSize(14).Bold().FontColor(Color.FromHex(ColorPrimario));
+                    innerCol.Item().AlignRight().Text($"Consentimiento #{consentimiento.Id}")
+                        .FontSize(10).FontColor(Color.FromHex(ColorSecundario));
+                });
+            });
+
+            col.Item().PaddingTop(10).LineHorizontal(2).LineColor(Color.FromHex(ColorPrimario));
+        });
+    }
+
+    private void ComposeContenidoConsentimiento(IContainer container, Consentimiento consentimiento, TycBaseContext context)
+    {
+        var data = BuildPdfDataFromConsentimiento(consentimiento, context);
+
+        container.PaddingTop(20).Column(col =>
+        {
+            col.Item().Element(c => ComposeDatosCliente(c, data));
+            col.Item().PaddingTop(15).Element(c => ComposeFirma(c, data));
+            col.Item().PaddingTop(25).Element(c => ComposePolitica(c, data));
+        });
+    }
+
+    private ConsentimientoPdfData BuildPdfDataFromConsentimiento(Consentimiento c, TycBaseContext context)
+    {
+        var cifrador = new CifradoHelper(c.EmpresaId.ToString());
+
+        // Obtener texto, firma, tipo identificación, usuario
+        var texto = _textoRepository.GetById(context, c.TerminosEmpresaId ?? 0);
+        var firma = _firmaRepository.GetByConsentimiento(context, c.Id);
+        var usuario = context.GetTable<Usuario>().FirstOrDefault(u => u.UsuaUsua == c.UsuarioId);
+
+        TipoIdentificacion tipoDoc = null;
+        if (c.TipoIdentificacion1.HasValue)
+        {
+            tipoDoc = _consentimientoRepository.GetTipoIdentificacion(context, c.EmpresaId, c.TipoIdentificacion1.Value);
+        }
+
+        string nombreCliente = c.TipoPersona == "N"
+            ? $"{cifrador.Descifrar(c.NombreCliente)} {cifrador.Descifrar(c.ApellidoCliente)}".Trim()
+            : cifrador.Descifrar(c.RazonSocial);
+
+        return new ConsentimientoPdfData
+        {
+            NombreCliente = nombreCliente,
+            Documento = cifrador.Descifrar(c.IdentificacionCliente),
+            TipoDocumento = tipoDoc?.Descripcion,
+            Estado = c.Estado switch { "F" => "Aceptado", "R" => "Rechazado", _ => "Pendiente" },
+            FechaCreacion = c.FechaCreacion,
+            FechaFirma = c.FechaAceptacion,
+            UsuarioCreo = usuario != null ? $"{usuario.UsuaNombre} {usuario.UsuaApellido}" : null,
+            IpFirma = c.DireccionIP,
+            MedioFirma = c.MedioAceptacion,
+            FirmaImagen = firma?.FirmBlob,
+            PoliticaHtml = texto?.TextTextoDelosTerminos,
+            TipoPersona = c.TipoPersona,
+            LogoEmpresa = null,
+            NombreEmpresa = null
+        };
+    }
+
+    private string ObtenerNombreMes(string periodo)
+    {
+        var meses = new[] { "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
+        if (int.TryParse(periodo.Substring(4, 2), out int mes) && mes >= 1 && mes <= 12)
+            return meses[mes];
+        return periodo;
+    }
+
+    private string ObtenerTextoEstado(string estado)
+    {
+        return estado?.ToUpper() switch
+        {
+            "T" => "Todos",
+            "F" => "Firmados",
+            "P" => "Pendientes",
+            "R" => "Rechazados",
+            _ => "Todos"
+        };
     }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Tyc.Modelo;
+﻿using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
 namespace Tyc.Interface.Repositories;

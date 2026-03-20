@@ -1,8 +1,5 @@
 ﻿using Administrador.ServiceLogs.Auth;
 using ServiceStack;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.General;

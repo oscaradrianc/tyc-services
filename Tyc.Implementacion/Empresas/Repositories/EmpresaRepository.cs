@@ -76,6 +76,9 @@ public class EmpresaRepository : IEmpresaRepository
         existing.ManejaMayoreo = entity.ManejaMayoreo;
         existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
         existing.ManejaCorporativo = entity.ManejaCorporativo;
+        //Validacion Consentimientos
+        existing.ValidaExistenciaPersonaNatural = entity.ValidaExistenciaPersonaNatural;
+        existing.ValidaExistenciaPersonaJuridica = entity.ValidaExistenciaPersonaJuridica;
 
         // Nota: EmpresaIdBloqueada NO se actualiza aquí por seguridad
         // Debe tener un método separado solo para SUPERADMIN
@@ -128,6 +131,7 @@ public class EmpresaRepository : IEmpresaRepository
         existing.Website = entity.Website;
         existing.MailContactos = entity.MailContactos;
         existing.LogoBase64 = entity.LogoBase64;
+        existing.Estado = entity.Estado;
 
         // Certificaciones
         existing.LogoIso9000 = entity.LogoIso9000;
@@ -165,6 +169,9 @@ public class EmpresaRepository : IEmpresaRepository
         existing.ManejaMayoreo = entity.ManejaMayoreo;
         existing.ManejaTurismoReuniones = entity.ManejaTurismoReuniones;
         existing.ManejaCorporativo = entity.ManejaCorporativo;
+        //Validacion Consentimientos
+        existing.ValidaExistenciaPersonaNatural = entity.ValidaExistenciaPersonaNatural;
+        existing.ValidaExistenciaPersonaJuridica = entity.ValidaExistenciaPersonaJuridica;
 
         await Task.Run(() => context.SubmitChanges());
         return existing;

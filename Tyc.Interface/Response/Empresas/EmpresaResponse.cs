@@ -57,5 +57,10 @@ public class EmpresaResponse
     public string? ManejaOficinaRecepTuristica { get; set; }
     public string? ManejaCorporativo { get; set; }
 
+    //
+    public string? ValidaExistenciaPersonaNatural { get; set; }
+    public string? ValidaExistenciaPersonaJuridica { get; set; }
+
+
 
 }

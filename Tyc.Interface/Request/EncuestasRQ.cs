@@ -1,7 +1,6 @@
 ﻿using ServiceStack;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Tyc.Interface.Response.General;
 
 namespace Tyc.Interface.Request;

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Tyc.Interface.Services;
+﻿namespace Tyc.Interface.Services;
 public interface IParametrizacionServices
 {
 }

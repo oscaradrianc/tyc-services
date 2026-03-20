@@ -1,13 +1,10 @@
-﻿using Servpub.Modelo.Tipos.Lecturas;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Modelo;
-using Tyc.Modelo.Consultas;
 using Tyc.Modelo.Contexto;
 using Tyc.Modelo.Tipos;
 
@@ -177,5 +174,49 @@ public class EncuestaRepository : IEncuestaRepository
                             Descripcion = e.Descripcion
                         }).FirstOrDefault();
         return encuesta;
+    }
+
+    public List<EmpresasBloquear> ObtenerEmpresaBloquear(TycBaseContext context)
+    {
+        var empresas = new List<EmpresasBloquear>();
+
+        // 1. Definimos la consulta SQL tal cual la probaste en la BD
+        string query = @"
+        SELECT 
+            d.empr_empr as IdEmpresa, 
+            a.fecha_limite_respuesta as FechaLimiteEncuesta, 
+            (current_date > a.fecha_limite_respuesta::DATE) AS Bloquear
+        FROM tenc_asignacionencuesta a
+        JOIN tenc_detalleasignacion d ON a.id_asignacion = d.asignacion_id
+        WHERE d.estado = 'PENDIENTE' AND (current_date > a.fecha_limite_respuesta::DATE)";
+
+        // 2. Usamos la conexión existente del contexto
+        using (var command = context.Connection.CreateCommand())
+        {
+            command.CommandText = query;
+
+            // Aseguramos que la conexión esté abierta
+            if (context.Connection.State != ConnectionState.Open)
+                context.Connection.Open();
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    empresas.Add(new EmpresasBloquear
+                    {
+                        // Convert.ToInt32 por si el tipo en BD es numeric o bigint
+                        IdEmpresa = Convert.ToInt32(reader["IdEmpresa"]),
+                        FechaLimiteEncuesta = Convert.ToDateTime(reader["FechaLimiteEncuesta"]),
+                        Bloquear = Convert.ToBoolean(reader["Bloquear"])
+                    });
+                }
+            }
+        }
+
+        // Aplicamos el Distinct en memoria si la consulta SQL puede traer duplicados
+        return empresas.GroupBy(e => new { e.IdEmpresa, e.FechaLimiteEncuesta, e.Bloquear })
+                       .Select(g => g.First())
+                       .ToList();
     }
 }

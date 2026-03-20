@@ -1,20 +1,18 @@
-﻿using AngleSharp.Dom;
-using Ganss.Xss;
+﻿using Ganss.Xss;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
-using ServiceStack.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.Textos;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
-using System.Threading.Tasks;
 
 namespace Tyc.Implementacion.Textos;
 
@@ -291,22 +289,46 @@ public class TextosBL : ITextoService
             {
                 if (item.Versionar)
                 {
-                    // Modo versionado: inactivar actual + insertar nuevo
-                    _repository.CambiarEstado(context, item.Id.Value, EstadoTexto.Inactivo);
+                    if (context.Connection.State != ConnectionState.Open)
+                        context.Connection.Open();
 
-                    var newEntity = new Texto
+                    using var transaction = context.Connection.BeginTransaction();
+                    context.Transaction = transaction;
+
+                    try
                     {
-                        EmpresaId = item.EmpresaId,
-                        TextTipoTexto = item.TipoTexto,
-                        TextTextoDelosTerminos = textoLimpio,
-                        TextEstado = item.Estado ?? EstadoTexto.Activo,
-                        TextFechaCreacion = DateTime.UtcNow,
-                        UsuaUsuario = usuausaId
-                    };
+                        // UPDATE: change tracking, sin submit intermedio
+                        _repository.CambiarEstado(context, item.Id.Value, EstadoTexto.Inactivo);
 
-                    var created = _repository.Create(context, newEntity);
-                    result.Versionados++;
-                    result.IdsAfectados.Add(created.TextText);
+                        // INSERT nuevo
+                        var newEntity = new Texto
+                        {
+                            EmpresaId = item.EmpresaId,
+                            TextTipoTexto = item.TipoTexto,
+                            TextTextoDelosTerminos = textoLimpio,
+                            TextEstado = item.Estado ?? EstadoTexto.Activo,
+                            TextFechaCreacion = DateTime.UtcNow,
+                            UsuaUsuario = usuausaId
+                        };
+
+                        context.GetTable<Texto>().InsertOnSubmit(newEntity);
+
+                        // Un solo SubmitChanges ejecuta UPDATE + INSERT en la misma tx
+                        context.SubmitChanges();
+                        transaction.Commit();
+
+                        result.Versionados++;
+                        result.IdsAfectados.Add(newEntity.TextText);
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                    finally
+                    {
+                        context.Transaction = null;
+                    }
                 }
                 else
                 {

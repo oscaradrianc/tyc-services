@@ -112,6 +112,11 @@ namespace Tyc.Modelo.Contexto
 
         [Column(Name = "empr_manejacorporativo")]
         public string ManejaCorporativo { get; set; }
+        [Column(Name = "empr_validarexistenciapersnatural")]
+        public string ValidaExistenciaPersonaNatural { get; set; }
+        [Column(Name = "empr_validarexistenciapersjuridica")]
+        public string ValidaExistenciaPersonaJuridica { get; set; }
+
 
     }
 

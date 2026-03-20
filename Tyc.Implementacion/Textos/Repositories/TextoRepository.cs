@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Devart.Data.Linq;
-using DevExpress.CodeParser;
 using Tyc.Interface.Repositories;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -109,7 +107,6 @@ public class TextoRepository : ITextoRepository
             return false;
 
         entity.TextEstado = estado;
-        context.SubmitChanges();
 
         return true;
     }

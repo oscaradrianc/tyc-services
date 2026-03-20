@@ -1,10 +1,4 @@
-﻿using DevExpress.XtraSpreadsheet.Commands;
-using Mapster;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Mapster;
 using Tyc.Interface.Request;
 using Tyc.Modelo.Contexto;
 

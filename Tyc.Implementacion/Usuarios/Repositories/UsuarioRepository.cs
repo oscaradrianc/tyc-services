@@ -14,6 +14,12 @@ namespace Tyc.Implementacion.Usuarios.Repositories
                 .FirstOrDefault(x => x.UsuaUsua == id);
         }
 
+        public Usuario GetByGuid(TycBaseContext context, Guid guid)
+        {
+            return context.GetTable<Usuario>()
+                .FirstOrDefault(x => x.UsuaGuid == guid);
+        }
+
         public Usuario GetByLogin(TycBaseContext context, string login)
         {
             return context.GetTable<Usuario>()

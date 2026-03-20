@@ -16,11 +16,14 @@ public interface IConsentimientoService
 
     // Async Methods
     Task<ConfirmacionConsentimientoRS> ObtenerConfirmacionConsentimientoAsync(TycBaseContext context, Guid id);
-    Task<Guid> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity);
+    Task<(Guid? Id, ConsentimientoExistenteRS Existente)> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity, bool forceInsert = false);
     Task<StatusResult> ActualizarConsentimientoConFirmaAsync(TycBaseContext context, ActualizarConsentimientoConFirma request);
     Task<FormularioConsentimientoRS> ObtenerFormularioConsentimientoAsync(TycBaseContext context, string subdominio, string idEncriptado);
     Task<StatusResult> ActualizarConsentimientoAsync(TycBaseContext context, ActualizarConsentimiento request);
-    Task<List<ConsentimientoListItemRS>> ListarConsentimientosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId);
-    Task<List<ConsentimientosRS>> ListarConsentimientosPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, DateTime? fechaFinal, string estado);
+    Task<List<ConsentimientoListItemRS>> ListarConsentimientosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId,
+        int usuarioId);
+    Task<List<ConsentimientosRS>> ListarConsentimientosPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, 
+        DateTime? fechaFinal, string estado, int usuarioId, string terminoBusqueda);
+    Task<bool> EliminarConsentimientoAsync(TycBaseContext context, Guid id);
 }
 

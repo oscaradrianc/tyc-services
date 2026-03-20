@@ -1,14 +1,13 @@
-﻿using ServiceStack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Devart.Data.Linq;
 using Tyc.Interface.Repositories;
 using Tyc.Modelo;
 using Tyc.Modelo.Consultas;
 using Tyc.Modelo.Contexto;
 using Tyc.Modelo.Tipos;
+using ServiceStack;
 
 namespace Tyc.Implementacion.Consentimientos.Repositories;
 
@@ -354,9 +353,14 @@ public class ConsentimientoRepository : IConsentimientoRepository
             .ToList());
     }
 
-    public async Task<List<Consentimiento>> ListarPorFiltrosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId)
+    public async Task<List<Consentimiento>> ListarPorFiltrosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId, int usuarioId)
     {
-        var query = context.GetTable<Consentimiento>().Where(c => c.EmpresaId == empresaId).AsQueryable();
+        var puedeVerTodo = context.GetTable<Usuario>()
+        .Where(u => u.UsuaUsua == usuarioId)
+        .Select(u => u.UsuaPuedeCrearUsuariosAdmin == "SI" || u.UsuaPuedeConsultarDatos == "SI")
+        .FirstOrDefault();
+
+        var query = context.GetTable<Consentimiento>().Where(c => c.EmpresaId == empresaId && (puedeVerTodo || c.UsuarioId == usuarioId)).AsQueryable();
 
         if (fecha.HasValue)
         {
@@ -374,11 +378,18 @@ public class ConsentimientoRepository : IConsentimientoRepository
         return await Task.Run(() => query.OrderByDescending(x => x.FechaCreacion).ToList());
     }
 
-    public async Task<List<ListaConsentimientos>> ListarPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, DateTime? fechaFinal, string estado)
+    public async Task<List<ListaConsentimientos>> ListarPorEmpresaAsync(TycBaseContext context, int? empresaId, DateTime? fechaInicial, 
+        DateTime? fechaFinal, string estado, int usuarioId)
     {
-         var query = (from c in context.GetTable<Consentimiento>()
+        var puedeVerTodo = context.GetTable<Usuario>()
+        .Where(u => u.UsuaUsua == usuarioId)
+        .Select(u => u.UsuaPuedeCrearUsuariosAdmin == "SI" || u.UsuaPuedeConsultarDatos == "SI")
+        .FirstOrDefault();
+
+        var query = (from c in context.GetTable<Consentimiento>()
                      join e in context.GetTable<Empresa>() on c.EmpresaId equals e.EmpresaId
-                     where (empresaId.Value == -1  || c.EmpresaId == empresaId.Value)
+                     where (empresaId.Value == -1 || c.EmpresaId == empresaId.Value)
+                        && (puedeVerTodo || c.UsuarioId == usuarioId)
                      select new ListaConsentimientos
                      {
                          Id = c.Id,
@@ -430,5 +441,129 @@ public class ConsentimientoRepository : IConsentimientoRepository
         }
 
         return await Task.Run(() => query.OrderByDescending(x => x.FechaCreacion).ToList());
+    }
+
+    public async Task<bool> EliminarConsentimientoAsync(TycBaseContext context, Guid id)
+    {
+        var entity = await Task.Run(() => context.GetTable<Consentimiento>()
+            .FirstOrDefault(x => x.GuId == id));
+
+        if (entity == null)
+            return false;
+
+        context.GetTable<Consentimiento>().DeleteOnSubmit(entity);
+        await Task.Run(() => context.SubmitChanges());
+        return true;
+    }
+
+    public async Task<List<Consentimiento>> GetConsentimientosPorPeriodoAsync(
+        TycBaseContext context,
+        int empresaId,
+        int año,
+        int mes,
+        string estado)
+    {
+        var fechaInicio = new DateTime(año, mes, 1);
+        var fechaFin = fechaInicio.AddMonths(1);
+
+        var query = context.GetTable<Consentimiento>()
+            .Where(c => c.EmpresaId == empresaId
+                && c.FechaCreacion >= fechaInicio
+                && c.FechaCreacion < fechaFin)
+            .AsQueryable();
+
+        // Filtrar por estado
+        if (!string.IsNullOrWhiteSpace(estado) && estado != "T")
+        {
+            query = estado.ToUpper() switch
+            {
+                "F" => query.Where(x => x.Estado == "F"),
+                "P" => query.Where(x => x.Estado == "P"),
+                "R" => query.Where(x => x.Estado == "R"),
+                _ => query
+            };
+        }
+
+        return await Task.Run(() => query.OrderBy(x => x.Id).ToList());
+    }
+
+    public async Task<Consentimiento> BuscarConsentimientoExistenteAsync(
+        TycBaseContext context,
+        int empresaId,
+        string identificacionCifrada,
+        string tipoPersona,
+        List<int> politicasNuevas)
+    {
+        // Buscar consentimientos del mismo tipo, empresa y estado F o P
+        var consentimientos = await Task.Run(() =>
+            context.GetTable<Consentimiento>()
+                .Where(c => c.EmpresaId == empresaId
+                    && c.TipoPersona == tipoPersona
+                    && c.IdentificacionCliente == identificacionCifrada
+                    && (c.Estado == "F" || c.Estado == "P"))
+                .ToList());
+
+        foreach (var consentimiento in consentimientos)
+        {
+            // Obtener políticas del consentimiento existente (solo las no-null)
+            var politicasExistente = new List<int?>();
+
+            if (consentimiento.TerminosEmpresaId.HasValue)
+                politicasExistente.Add(consentimiento.TerminosEmpresaId.Value);
+            if (consentimiento.CompartirInfoId.HasValue)
+                politicasExistente.Add(consentimiento.CompartirInfoId.Value);
+            if (consentimiento.RecibirOfertasId.HasValue)
+                politicasExistente.Add(consentimiento.RecibirOfertasId.Value);
+            if (consentimiento.TerminosPersonaJuridicaId.HasValue)
+                politicasExistente.Add(consentimiento.TerminosPersonaJuridicaId.Value);
+
+            // Verificar si hay políticas nuevas que el existente no tenga
+            var politicasNuevasNoEnExistente = politicasNuevas
+                .Where(p => !politicasExistente.Contains(p))
+                .ToList();
+
+            if (politicasNuevasNoEnExistente.Any())
+            {
+                // Hay políticas nuevas, permitir crear
+                continue;
+            }
+
+            // Verificar si todas las políticas del nuevo están en el existente
+            var todasPoliticasEnExistente = politicasNuevas
+                .All(p => politicasExistente.Contains(p));
+
+            if (!todasPoliticasEnExistente)
+            {
+                // El nuevo tiene menos políticas que el existente, permitir
+                continue;
+            }
+
+            // Verificar que todas las políticas coincidan y estén activas
+            var politicasCoincidentes = politicasNuevas
+                .Where(p => politicasExistente.Contains(p))
+                .ToList();
+
+            if (!politicasCoincidentes.Any())
+            {
+                // No hay coincidencias, permitir
+                continue;
+            }
+
+            // Verificar estado de las políticas en Textos
+            var textosActivos = context.GetTable<Texto>()
+                .Where(t => politicasCoincidentes.Contains(t.TextText)
+                    && t.TextEstado == "A")
+                .Select(t => t.TextText)
+                .ToList();
+
+            // Si todas las políticas coincidentes están activas → BLOQUEAR
+            if (textosActivos.Count == politicasCoincidentes.Count)
+            {
+                return consentimiento;
+            }
+            // Si alguna está inactiva → permitir (hay versión nueva)
+        }
+
+        return null;
     }
 }

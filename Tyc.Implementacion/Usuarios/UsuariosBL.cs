@@ -1,12 +1,10 @@
-﻿using Administrador.Modelo.Contexto;
-using Administrador.Modelo.Tipos;
+﻿using Administrador.Modelo.Tipos;
 using Administrador.ServiceLogs.Auth;
 using AdministradorCore.Cifrar;
 using General.Utilidades.Cache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
 using ServiceStack;
-using ServiceStack.Configuration;
 using System;
 using System.Collections.Generic;
 using Tyc.Interface.Repositories;
@@ -14,7 +12,6 @@ using Tyc.Interface.Response.General;
 using Tyc.Interface.Response.Usuarios;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
-using Tyc.Modelo.Contexto;
 
 namespace Tyc.Implementacion.Usuarios
 {
@@ -471,6 +468,51 @@ namespace Tyc.Implementacion.Usuarios
                 {
                     Success = false,
                     Mensaje = "Ocurrió un error al actualizar la clave por defecto."
+                };
+            }
+        }
+
+        public ApiResponse<PermisosUsuarioRS> GetPermisosUsuario(TycBaseContext context, int empresaId, int usuarioId)
+        {
+            try
+            {
+                //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
+                ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
+                ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
+
+                if (!concatenado.StartsWith(prefijo))
+                    throw new InvalidOperationException("Prefijo inválido");
+
+                int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+
+                var usuario = _usuarioRepository.GetById(context, idUsuario);
+                if (usuario != null)
+                {
+                    return new ApiResponse<PermisosUsuarioRS>
+                    {
+                        Success = true,
+                        Data = new PermisosUsuarioRS
+                        {
+                            UsuaPuedeCrearConsentimientos = usuario.UsuaPuedeCrearConsentimientos,
+                            UsuaPuedeCrearUsuariosAdmin = usuario.UsuaPuedeCrearUsuariosAdmin,
+                            UsuaPuedeConsultarDatos = usuario.UsuaPuedeConsultarDatos
+                        }
+                    };
+                }
+
+                return new ApiResponse<PermisosUsuarioRS>
+                {
+                    Success = false,
+                    Mensaje = "No existe un usuario con el identificador proporcionado."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al consultar los permisos del usuario.");
+                return new ApiResponse<PermisosUsuarioRS>
+                {
+                    Success = false,
+                    Mensaje = "Ocurrió un error al consultar los permisos del usuario."
                 };
             }
         }

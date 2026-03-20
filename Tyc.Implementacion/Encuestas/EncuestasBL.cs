@@ -1,12 +1,8 @@
-﻿using AngleSharp.Dom;
-using DevExpress.CodeParser;
-using Microsoft.Extensions.Logging;
-using Servpub.Modelo.Tipos.Lecturas;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
-using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
@@ -211,6 +207,34 @@ public class EncuestasBL : IEncuestaService
         {
             _logger.LogError(ex, $"Error al obtener la estructura de la encuesta {encuestaId}");
             throw;
+        }
+    }
+
+
+    public async Task ProcesarBloquearEmpresaAsync(TycBaseContext context)
+    {       
+        var pendientes = _encuestaRepository.ObtenerEmpresaBloquear(context);
+
+        foreach (var detalle in pendientes)
+        {           
+            try
+            {
+                if (detalle.Bloquear)
+                {
+                    // 1. Consultar la empresa 
+                    //var empresa = context.GetTable<Modelo.Contexto.Empresa>().FirstOrDefault(e => e.EmpresaId == detalle.IdEmpresa);
+                    var empresa = await _empresaRepository.GetByIdAsync(context, detalle.IdEmpresa);
+                    if (empresa != null)
+                    {
+                        empresa.Estado = "BLOQUEADA";
+                        await _empresaRepository.UpdateAsync(context, empresa);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error procesando bloqueo de empresa {detalle.IdEmpresa}");                
+            }
         }
     }
 

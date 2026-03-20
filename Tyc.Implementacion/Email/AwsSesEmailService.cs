@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using Tyc.Interface.Request;
 using Tyc.Interface.Services;
 using Tyc.Modelo.Configuracion;
 

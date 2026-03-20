@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
 	  <UserSecretsId>a0f6f205-78ce-46b6-ac1d-e6d82a3d9e83</UserSecretsId>
 	  <NoWin32Manifest>true</NoWin32Manifest>
-      <Version>2026.0902.02</Version>
+      <Version>2026.1203.03</Version>
       <Company>Soluciones Globales SAS</Company>
       <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
       <EnableCentralPackageManagement>true</EnableCentralPackageManagement>

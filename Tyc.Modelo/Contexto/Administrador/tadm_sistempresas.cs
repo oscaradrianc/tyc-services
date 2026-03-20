@@ -1,6 +1,4 @@
 ﻿using Devart.Data.Linq.Mapping;
-using System;
-using System.Runtime.Serialization;
 
 namespace Tyc.Modelo.Contexto.Administrador
 {

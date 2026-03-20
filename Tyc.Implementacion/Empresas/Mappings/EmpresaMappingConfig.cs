@@ -3,7 +3,6 @@ using Tyc.Interface.Request;
 using Tyc.Modelo.Contexto;
 using System;
 using Tyc.Interface.Response.Empresas;
-using DevExpress.Office.Model;
 
 namespace Tyc.Implementacion.Empresas.Mappings;
 
@@ -47,7 +46,9 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaOficinaRecepTuristica, src => src.ManejaOficinaRecepTuristica)
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
-            .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo);
+            .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
+            .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
+            .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica);
 
         // CreateRequest a Entity
         config.NewConfig<CreateEmpresa, Empresa>()
@@ -85,6 +86,8 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
             .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
+            .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
+            .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica)
             .Ignore(dest => dest.EmpresaId);
 
         // UpdateRequest a Entity
@@ -122,6 +125,8 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaMayoreo, src => src.ManejaMayoreo)
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
             .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
+            .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
+            .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica)
             .Ignore(dest => dest.Guid)
             .Ignore(dest => dest.Estado);
     }

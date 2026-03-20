@@ -27,6 +27,7 @@ namespace Tyc.Interface.Request
         public string RazonSocial { get; set; }
         public string NombreContacto { get; set; }
         public string Referencia { get; set; }
+        public bool ForceInsert { get; set; } = false;
     }
 
     [Route("/consentimientos/{ConsentimientoId}/firma", "PUT")]
@@ -72,6 +73,8 @@ namespace Tyc.Interface.Request
         /// Estado: "F" = Firmado, "P" = Pendiente, "R" = Rechazado
         /// </summary>
         public string Estado { get; set; }
+
+        public string TerminoBusqueda { get; set; }
     }
 
     // En algún servicio de ServiceStack
@@ -84,5 +87,11 @@ namespace Tyc.Interface.Request
         {
             return $"OK - Method: {Request.Verb}, Origin: {Request.Headers["Origin"]}";
         }
+    }
+
+    [Route("/consentimientos/{Id}", "DELETE")]
+    public class DeleteConsentimientoRQ : IReturn<ApiResponse<bool>>
+    {
+        public Guid Id { get; set; }
     }
 }

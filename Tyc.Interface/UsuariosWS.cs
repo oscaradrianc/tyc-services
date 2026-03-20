@@ -1,15 +1,13 @@
-﻿using Administrador.Modelo.Contexto;
-using Administrador.Modelo.Tipos;
+﻿using Administrador.Modelo.Tipos;
 using Administrador.ServiceLogs.Auth;
 using MapsterMapper;
 using ServiceStack;
-using ServiceStack.Configuration;
+using System;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.General;
 using Tyc.Interface.Response.Usuarios;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
-using Tyc.Modelo.Contexto;
 
 namespace Tyc.Interface;
 
@@ -78,6 +76,18 @@ public class UsuariosWS : Service
             var res = _usuarioService.EncriptarPassDefecto(dbSigo, request.Id);
             return res;
 
+        }
+    }
+
+    [Authenticate]
+    public ApiResponse<PermisosUsuarioRS> Get(GetPermisosUsuarioRQ request)
+    {
+        CustomUserSession userSession = this.SessionAs<CustomUserSession>();
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            ;
+            var res = _usuarioService.GetPermisosUsuario(dbSigo, Convert.ToInt32(userSession.IDEmpresa), int.Parse(userSession.IDUsuario));
+            return res;
         }
     }
 }

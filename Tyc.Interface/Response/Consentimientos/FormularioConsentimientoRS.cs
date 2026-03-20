@@ -1,8 +1,4 @@
-﻿using ServiceStack;
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Tyc.Modelo.Contexto;
+﻿using System.Collections.Generic;
 
 namespace Tyc.Interface.Response.Consentimientos;
 

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Collections.Generic;
-using System.Text;
 using Tyc.Interface.Repositories;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;

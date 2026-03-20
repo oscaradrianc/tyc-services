@@ -32,7 +32,6 @@ using Tyc.Implementacion.Textos;
 using Tyc.Implementacion.Textos.Repositories;
 using Tyc.Implementacion.Usuarios;
 using Tyc.Implementacion.Usuarios.Repositories;
-using Tyc.Interface;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Services;
@@ -119,6 +118,7 @@ public class Program
 
             builder.Services.AddHostedService<MonitoringWorker>();
             builder.Services.AddHostedService<NotificacionEncuestasWorker>();
+            builder.Services.AddHostedService<BloquearEmpresaWorker>();
 
             var settings = Settings.GetInstance().SetConfiguration(builder.Configuration);
             settings.SetDbConfig(true);

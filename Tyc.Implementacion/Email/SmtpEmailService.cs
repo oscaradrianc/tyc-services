@@ -1,14 +1,10 @@
 ﻿
 using AdministradorCore.Cifrar;
-using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Mail;
-using System.Net.Mime;
-using System.Text;
 using System.Threading.Tasks;
 using Tyc.Interface.Services;
 using Tyc.Modelo;

@@ -69,4 +69,7 @@ public class EncriptarDefectoRQ : IReturn<ApiResponse<bool>>
     public int Id { get; set; }
 }
 
-
+[Route("/usuarios/permisos", "GET")]
+public class GetPermisosUsuarioRQ : IReturn<ApiResponse<PermisosUsuarioRS>>
+{
+}

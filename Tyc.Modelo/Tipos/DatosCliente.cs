@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace Tyc.Modelo.Tipos;
+﻿namespace Tyc.Modelo.Tipos;
 
 public class DatosCliente
 {
