@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
@@ -15,4 +16,9 @@ public interface IFirmaRepository
     Task<Firma> GetByConsentimientoAsync(TycBaseContext context, int consentimientoId);
     Task<bool> ExisteFirmaParaConsentimientoAsync(TycBaseContext context, int consentimientoId);
     Task<bool> EliminarAsync(TycBaseContext context, int consentimientoId);
+
+    /// <summary>
+    /// Obtiene firmas para múltiples consentimientos en una sola consulta
+    /// </summary>
+    Task<List<Firma>> GetByConsentimientoIdsAsync(TycBaseContext context, List<int> consentimientoIds);
 }

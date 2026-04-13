@@ -31,7 +31,7 @@ public class EmpresasBL : IEmpresaService
         return entity != null ? _mapper.Map<EmpresaResponse>(entity) : null;
     }
 
-    public int CrearEmpresa(TycBaseContext context, Empresa entity)
+    public int CrearEmpresa(TycBaseContext context, Empresa entity, int usuarioId)
     {
         // Validar subdominio único
         if (_repository.ExisteSubdominio(context, entity.Subdominio))
@@ -46,6 +46,10 @@ public class EmpresasBL : IEmpresaService
         // Establecer valores por defecto
         entity.Estado = EstadoBloqueoEmpresa.Activo;
         entity.Guid = Guid.NewGuid();
+
+        // Auditoría de creación
+        entity.LogsUsuaCreo = usuarioId;
+        entity.LogsFechaCreo = DateTime.Now;
 
         var created = _repository.Create(context, entity);
         return created.EmpresaId;

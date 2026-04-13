@@ -8,6 +8,6 @@ namespace Tyc.Interface.Services;
 public interface IEmpresaService
 {
     EmpresaResponse ObtenerEmpresaPorId(TycBaseContext context, int id);
-    int CrearEmpresa(TycBaseContext context, Empresa entity);
+    int CrearEmpresa(TycBaseContext context, Empresa entity, int usuarioId);
     bool ActualizarEmpresa(TycBaseContext context, Empresa entity, List<Texto> entityTextos, int usuarioId);
 }

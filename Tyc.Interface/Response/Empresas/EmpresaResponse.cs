@@ -61,6 +61,7 @@ public class EmpresaResponse
     public string? ValidaExistenciaPersonaNatural { get; set; }
     public string? ValidaExistenciaPersonaJuridica { get; set; }
 
-
-
+    // Auditoría
+    public int? LogsUsuaCreo { get; set; }
+    public DateTime? LogsFechaCreo { get; set; }
 }

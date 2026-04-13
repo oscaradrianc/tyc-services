@@ -54,5 +54,13 @@ public interface IConsentimientoRepository
         string identificacionCifrada,
         string tipoPersona,
         List<int> politicasNuevas);
+
+    /// <summary>
+    /// Obtiene tipos de identificación por lista de IDs en una sola consulta
+    /// </summary>
+    Task<List<TipoIdentificacion>> GetTiposIdentificacionByIdsAsync(
+        TycBaseContext context,
+        int empresaId,
+        List<int> tipoIdentificacionIds);
 }
 

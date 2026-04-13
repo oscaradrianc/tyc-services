@@ -33,4 +33,9 @@ public interface ITextoRepository
     Task<Texto> UpdateAsync(TycBaseContext context, Texto entity);
     Task<bool> CambiarEstadoAsync(TycBaseContext context, int id, string estado);
     Task<bool> ExistsAsync(TycBaseContext context, int id);
+
+    /// <summary>
+    /// Obtiene múltiples textos por sus IDs en una sola consulta
+    /// </summary>
+    Task<List<Texto>> GetByIdsAsync(TycBaseContext context, List<int> ids);
 }

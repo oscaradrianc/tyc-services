@@ -48,7 +48,9 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaTurismoReuniones, src => src.ManejaTurismoReuniones)
             .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
             .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
-            .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica);
+            .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica)
+            .Map(dest => dest.LogsUsuaCreo, src => src.LogsUsuaCreo)
+            .Map(dest => dest.LogsFechaCreo, src => src.LogsFechaCreo);
 
         // CreateRequest a Entity
         config.NewConfig<CreateEmpresa, Empresa>()
@@ -88,7 +90,9 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ManejaCorporativo, src => src.ManejaCorporativo)
             .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
             .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica)
-            .Ignore(dest => dest.EmpresaId);
+            .Ignore(dest => dest.EmpresaId)
+            .Ignore(dest => dest.LogsUsuaCreo)
+            .Ignore(dest => dest.LogsFechaCreo);
 
         // UpdateRequest a Entity
         config.NewConfig<UpdateEmpresa, Empresa>()
@@ -128,6 +132,8 @@ public class EmpresaMappingConfig : IRegister
             .Map(dest => dest.ValidaExistenciaPersonaNatural, src => src.ValidaExistenciaPersonaNatural)
             .Map(dest => dest.ValidaExistenciaPersonaJuridica, src => src.ValidaExistenciaPersonaJuridica)
             .Ignore(dest => dest.Guid)
-            .Ignore(dest => dest.Estado);
+            .Ignore(dest => dest.Estado)
+            .Ignore(dest => dest.LogsUsuaCreo)
+            .Ignore(dest => dest.LogsFechaCreo);
     }
 }

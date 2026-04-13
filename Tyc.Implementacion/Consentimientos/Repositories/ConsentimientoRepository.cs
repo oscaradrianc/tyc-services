@@ -353,6 +353,27 @@ public class ConsentimientoRepository : IConsentimientoRepository
             .ToList());
     }
 
+    public async Task<List<TipoIdentificacion>> GetTiposIdentificacionByIdsAsync(
+        TycBaseContext context,
+        int empresaId,
+        List<int> tipoIdentificacionIds)
+    {
+        return await Task.Run(() =>
+        {
+            if (tipoIdentificacionIds == null || !tipoIdentificacionIds.Any())
+                return new List<TipoIdentificacion>();
+
+            var idsValidos = tipoIdentificacionIds.Where(id => id > 0).Distinct().ToList();
+
+            if (!idsValidos.Any())
+                return new List<TipoIdentificacion>();
+
+            return context.GetTable<TipoIdentificacion>()
+                .Where(x => x.EmpresaId == empresaId && idsValidos.Contains(x.TipoIdentificacionId))
+                .ToList();
+        });
+    }
+
     public async Task<List<Consentimiento>> ListarPorFiltrosAsync(TycBaseContext context, DateTime? fecha, string estado, int empresaId, int usuarioId)
     {
         var puedeVerTodo = context.GetTable<Usuario>()

@@ -117,6 +117,11 @@ namespace Tyc.Modelo.Contexto
         [Column(Name = "empr_validarexistenciapersjuridica")]
         public string ValidaExistenciaPersonaJuridica { get; set; }
 
+        [Column(Name = "logs_usuacreo")]
+        public int? LogsUsuaCreo { get; set; }
+
+        [Column(Name = "logs_fechacreo")]
+        public DateTime? LogsFechaCreo { get; set; }
 
     }
 

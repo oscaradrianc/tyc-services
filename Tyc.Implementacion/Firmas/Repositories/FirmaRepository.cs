@@ -1,8 +1,9 @@
-﻿using Tyc.Interface.Repositories;
-using Tyc.Modelo;
-using Tyc.Modelo.Contexto;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Tyc.Interface.Repositories;
+using Tyc.Modelo;
+using Tyc.Modelo.Contexto;
 
 namespace Tyc.Implementacion.Firmas.Repositories;
 
@@ -65,5 +66,23 @@ public class FirmaRepository : IFirmaRepository
         context.GetTable<Firma>().DeleteOnSubmit(firma);
         await Task.Run(() => context.SubmitChanges());
         return true;
+    }
+
+    public async Task<List<Firma>> GetByConsentimientoIdsAsync(TycBaseContext context, List<int> consentimientoIds)
+    {
+        return await Task.Run(() =>
+        {
+            if (consentimientoIds == null || !consentimientoIds.Any())
+                return new List<Firma>();
+
+            var idsValidos = consentimientoIds.Where(id => id > 0).Distinct().ToList();
+
+            if (!idsValidos.Any())
+                return new List<Firma>();
+
+            return context.GetTable<Firma>()
+                .Where(x => idsValidos.Contains(x.ConsConsecuencia))
+                .ToList();
+        });
     }
 }

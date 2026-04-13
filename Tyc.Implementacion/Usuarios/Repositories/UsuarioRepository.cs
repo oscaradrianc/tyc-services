@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -94,6 +96,24 @@ namespace Tyc.Implementacion.Usuarios.Repositories
                 return 1; // Éxito
             }
             return 0; // Usuario no encontrado
+        }
+
+        public async Task<List<Usuario>> GetByIdsAsync(TycBaseContext context, List<int> ids)
+        {
+            return await Task.Run(() =>
+            {
+                if (ids == null || !ids.Any())
+                    return new List<Usuario>();
+
+                var idsValidos = ids.Where(id => id > 0).Distinct().ToList();
+
+                if (!idsValidos.Any())
+                    return new List<Usuario>();
+
+                return context.GetTable<Usuario>()
+                    .Where(x => idsValidos.Contains(x.UsuaUsua))
+                    .ToList();
+            });
         }
     }
 }

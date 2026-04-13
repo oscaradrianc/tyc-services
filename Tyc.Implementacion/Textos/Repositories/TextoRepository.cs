@@ -213,4 +213,23 @@ public class TextoRepository : ITextoRepository
     {
         return await Task.Run(() => context.GetTable<Texto>().Any(x => x.TextText == id));
     }
+
+    public async Task<List<Texto>> GetByIdsAsync(TycBaseContext context, List<int> ids)
+    {
+        return await Task.Run(() =>
+        {
+            if (ids == null || !ids.Any())
+                return new List<Texto>();
+
+            // Eliminar duplicados y valores 0 o negativos
+            var idsValidos = ids.Where(id => id > 0).Distinct().ToList();
+
+            if (!idsValidos.Any())
+                return new List<Texto>();
+
+            return context.GetTable<Texto>()
+                .Where(x => idsValidos.Contains(x.TextText))
+                .ToList();
+        });
+    }
 }

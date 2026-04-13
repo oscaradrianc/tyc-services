@@ -52,7 +52,8 @@ public class EmpresasWS : Service
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
             var entity = _mapper.Map<Empresa>(request);
-            var id = _EmpresaService.CrearEmpresa(dbSigo, entity);
+            int usuarioId = int.Parse(userSession.IDUsuario);
+            var id = _EmpresaService.CrearEmpresa(dbSigo, entity, usuarioId);
 
             return new ApiResponse<int>
             {

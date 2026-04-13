@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
 
@@ -14,5 +16,10 @@ namespace Tyc.Interface.Repositories
         int ActualizarUsuario(TycBaseContext context, Usuario usuario);
         int CambiarClave(TycBaseContext context, int usuarioId, string nuevaClave);
         int ActualizarClave(TycBaseContext context, int usuarioId, string nuevaClave);
+
+        /// <summary>
+        /// Obtiene múltiples usuarios por sus IDs en una sola consulta
+        /// </summary>
+        Task<List<Usuario>> GetByIdsAsync(TycBaseContext context, List<int> ids);
     }
 }

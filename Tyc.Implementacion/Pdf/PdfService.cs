@@ -22,6 +22,7 @@ public class PdfService : IPdfService
     private readonly ITextoRepository _textoRepository;
     private readonly IFirmaRepository _firmaRepository;
     private readonly IEmpresaRepository _empresaRepository;
+    private readonly IUsuarioRepository _usuarioRepository;
 
     // Colores corporativos
     private static readonly string ColorPrimario = "#2c3e50";
@@ -33,12 +34,14 @@ public class PdfService : IPdfService
         IConsentimientoRepository consentimientoRepository,
         ITextoRepository textoRepository,
         IFirmaRepository firmaRepository,
-        IEmpresaRepository empresaRepository)
+        IEmpresaRepository empresaRepository,
+        IUsuarioRepository usuarioRepository)
     {
         _consentimientoRepository = consentimientoRepository;
         _textoRepository = textoRepository;
         _firmaRepository = firmaRepository;
         _empresaRepository = empresaRepository;
+        _usuarioRepository = usuarioRepository;
 
         // Licencia Community (gratis para empresas < $1M revenue)
         QuestPDF.Settings.License = LicenseType.Community;
@@ -593,16 +596,85 @@ public class PdfService : IPdfService
         if (consentimientos == null || !consentimientos.Any())
             throw new InvalidOperationException($"No se encontraron consentimientos para el período {periodo} y empresa {empresaId}");
 
+        // Límite máximo de registros para evitar timeout/memory issues
+        const int MAX_REGISTROS = 500;
+        if (consentimientos.Count > MAX_REGISTROS)
+            throw new InvalidOperationException($"El período contiene {consentimientos.Count} registros. Máximo permitido: {MAX_REGISTROS}. " +
+                "Considere filtrar por estado o usar un rango de fechas más corto.");
+
+        // CARGA OPTIMIZADA: Obtener todos los datos relacionados en batch (evita N+1 queries)
+        var datosRelacionados = await CargarDatosRelacionadosAsync(context, consentimientos, empresaId);
+
         // Generar PDF
-        return GenerarPdfConsolidado(consentimientos, empresa, periodo, estado, context);
+        return GenerarPdfConsolidadoOptimizado(consentimientos, empresa, periodo, estado, datosRelacionados);
     }
 
-    private byte[] GenerarPdfConsolidado(
+    /// <summary>
+    /// Carga todos los datos relacionados en batch para evitar el problema N+1.
+    /// NOTA: Las consultas se ejecutan secuencialmente porque el DataContext no es thread-safe.
+    /// </summary>
+    private async Task<DatosRelacionadosConsentimiento> CargarDatosRelacionadosAsync(
+        TycBaseContext context,
+        List<Consentimiento> consentimientos,
+        int empresaId)
+    {
+        // Extraer IDs únicos
+        var idsTextos = consentimientos
+            .Where(c => c.TerminosEmpresaId.HasValue && c.TerminosEmpresaId.Value > 0)
+            .Select(c => c.TerminosEmpresaId.Value)
+            .Distinct()
+            .ToList();
+
+        var idsUsuarios = consentimientos
+            .Where(c => c.UsuarioId > 0)
+            .Select(c => c.UsuarioId)
+            .Distinct()
+            .ToList();
+
+        var idsTiposIdentificacion = consentimientos
+            .Where(c => c.TipoIdentificacion1.HasValue && c.TipoIdentificacion1.Value > 0)
+            .Select(c => c.TipoIdentificacion1.Value)
+            .Distinct()
+            .ToList();
+
+        var idsConsentimientos = consentimientos
+            .Select(c => c.Id)
+            .Distinct()
+            .ToList();
+
+        // Ejecutar consultas SECUENCIALMENTE (el DataContext no es thread-safe)
+        var textos = await _textoRepository.GetByIdsAsync(context, idsTextos);
+        var usuarios = await _usuarioRepository.GetByIdsAsync(context, idsUsuarios);
+        var tiposIdentificacion = await _consentimientoRepository.GetTiposIdentificacionByIdsAsync(context, empresaId, idsTiposIdentificacion);
+        var firmas = await _firmaRepository.GetByConsentimientoIdsAsync(context, idsConsentimientos);
+
+        // Construir diccionarios para lookups O(1)
+        return new DatosRelacionadosConsentimiento
+        {
+            Textos = textos.ToDictionary(t => t.TextText, t => t),
+            Usuarios = usuarios.ToDictionary(u => u.UsuaUsua, u => u),
+            TiposIdentificacion = tiposIdentificacion.ToDictionary(t => t.TipoIdentificacionId, t => t),
+            Firmas = firmas.ToDictionary(f => f.ConsConsecuencia, f => f)
+        };
+    }
+
+    /// <summary>
+    /// DTO para almacenar datos relacionados precargados
+    /// </summary>
+    private class DatosRelacionadosConsentimiento
+    {
+        public Dictionary<int, Texto> Textos { get; set; } = new();
+        public Dictionary<int, Usuario> Usuarios { get; set; } = new();
+        public Dictionary<int, TipoIdentificacion> TiposIdentificacion { get; set; } = new();
+        public Dictionary<int, Firma> Firmas { get; set; } = new();
+    }
+
+    private byte[] GenerarPdfConsolidadoOptimizado(
         List<Consentimiento> consentimientos,
         Empresa empresa,
         string periodo,
         string estado,
-        TycBaseContext context)
+        DatosRelacionadosConsentimiento datosRelacionados)
     {
         var nombreMes = ObtenerNombreMes(periodo);
         var estadoTexto = ObtenerTextoEstado(estado);
@@ -619,7 +691,7 @@ public class PdfService : IPdfService
                 page.Content().Element(c => ComposePortada(c, empresa, nombreMes, periodo, consentimientos.Count, estadoTexto));
             });
 
-            // Páginas de consentimientos
+            // Páginas de consentimientos - usando datos precargados (sin N+1)
             foreach (var consentimiento in consentimientos)
             {
                 container.Page(page =>
@@ -629,7 +701,7 @@ public class PdfService : IPdfService
                     page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Grey.Darken3));
 
                     page.Header().Element(c => ComposeHeaderPagina(c, consentimiento, empresa));
-                    page.Content().Element(c => ComposeContenidoConsentimiento(c, consentimiento, context));
+                    page.Content().Element(c => ComposeContenidoConsentimientoOptimizado(c, consentimiento, datosRelacionados));
                     page.Footer().Element(c => ComposeFooterPagina(c, empresa));
                 });
             }
@@ -697,9 +769,12 @@ public class PdfService : IPdfService
         });
     }
 
-    private void ComposeContenidoConsentimiento(IContainer container, Consentimiento consentimiento, TycBaseContext context)
+    private void ComposeContenidoConsentimientoOptimizado(
+        IContainer container,
+        Consentimiento consentimiento,
+        DatosRelacionadosConsentimiento datosRelacionados)
     {
-        var data = BuildPdfDataFromConsentimiento(consentimiento, context);
+        var data = BuildPdfDataFromConsentimientoOptimizado(consentimiento, datosRelacionados);
 
         container.PaddingTop(20).Column(col =>
         {
@@ -709,19 +784,22 @@ public class PdfService : IPdfService
         });
     }
 
-    private ConsentimientoPdfData BuildPdfDataFromConsentimiento(Consentimiento c, TycBaseContext context)
+    private ConsentimientoPdfData BuildPdfDataFromConsentimientoOptimizado(
+        Consentimiento c,
+        DatosRelacionadosConsentimiento datos)
     {
         var cifrador = new CifradoHelper(c.EmpresaId.ToString());
 
-        // Obtener texto, firma, tipo identificación, usuario
-        var texto = _textoRepository.GetById(context, c.TerminosEmpresaId ?? 0);
-        var firma = _firmaRepository.GetByConsentimiento(context, c.Id);
-        var usuario = context.GetTable<Usuario>().FirstOrDefault(u => u.UsuaUsua == c.UsuarioId);
+        // Lookup O(1) desde diccionarios precargados (sin queries a BD)
+        datos.Textos.TryGetValue(c.TerminosEmpresaId ?? 0, out var texto);
+        datos.Firmas.TryGetValue(c.Id, out var firma);
+        datos.Usuarios.TryGetValue(c.UsuarioId, out var usuario);
 
         TipoIdentificacion tipoDoc = null;
-        if (c.TipoIdentificacion1.HasValue)
+        if (c.TipoIdentificacion1.HasValue &&
+            datos.TiposIdentificacion.TryGetValue(c.TipoIdentificacion1.Value, out var tipoEncontrado))
         {
-            tipoDoc = _consentimientoRepository.GetTipoIdentificacion(context, c.EmpresaId, c.TipoIdentificacion1.Value);
+            tipoDoc = tipoEncontrado;
         }
 
         string nombreCliente = c.TipoPersona == "N"
