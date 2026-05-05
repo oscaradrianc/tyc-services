@@ -409,6 +409,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
 
         var query = (from c in context.GetTable<Consentimiento>()
                      join e in context.GetTable<Empresa>() on c.EmpresaId equals e.EmpresaId
+                     join u in context.GetTable<Usuario>() on c.UsuarioId equals u.UsuaUsua     
                      where (empresaId.Value == -1 || c.EmpresaId == empresaId.Value)
                         && (puedeVerTodo || c.UsuarioId == usuarioId)
                      select new ListaConsentimientos
@@ -416,6 +417,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
                          Id = c.Id,
                          EmpresaId = c.EmpresaId,
                          UsuarioId = c.UsuarioId,
+                         NombreUsuario = u.UsuaNombre + ' ' + u.UsuaApellido,
                          TerminosEmpresaId = c.TerminosEmpresaId,
                          CompartirInfoId = c.CompartirInfoId,
                          RecibirOfertasId = c.RecibirOfertasId,

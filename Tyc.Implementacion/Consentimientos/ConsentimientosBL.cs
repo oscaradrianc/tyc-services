@@ -1034,7 +1034,8 @@ public class ConsentimientosBL : IConsentimientoService
                 ContactabilidadEmail = entity.ContactabilidadEmail,
                 ContactabilidadSms = entity.ContactabilidadSms,
                 ContactabilidadWhatsapp = entity.ContactabilidadWhatsapp,
-                AceptoTerminosPersonaJuridica = entity.AceptoTerminosPersonaJuridica
+                AceptoTerminosPersonaJuridica = entity.AceptoTerminosPersonaJuridica,
+                NombreUsuario = entity.NombreUsuario
             });
         }
         

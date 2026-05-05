@@ -28,6 +28,7 @@ namespace Tyc.Interface.Response.Consentimientos
         public string ContactabilidadEmail { get; set; }
         public string ContactabilidadMovil { get; set; }
         public string AceptoTerminosPersonaJuridica { get; set; }
+        public string NombreUsuario { get; set; }
 
     }
 }

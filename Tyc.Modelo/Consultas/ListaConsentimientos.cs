@@ -15,6 +15,8 @@ namespace Tyc.Modelo.Consultas
 
         [Column(Name = "usua_usua")]
         public int UsuarioId { get; set; }
+        [Column(Name = "usua_nombre")]
+        public string NombreUsuario { get; set; }
 
         [Column(Name = "text_texttyc")]
         public int? TerminosEmpresaId { get; set; }
