@@ -74,10 +74,8 @@ public class TycWS : Service
                 entity,
                 request.ForceInsert);
 
-            // Si hay conflicto, retornar 409
             if (existente != null)
             {
-                Response.StatusCode = (int)System.Net.HttpStatusCode.Conflict;
                 return new HttpResult(existente, "application/json")
                 {
                     StatusCode = System.Net.HttpStatusCode.Conflict

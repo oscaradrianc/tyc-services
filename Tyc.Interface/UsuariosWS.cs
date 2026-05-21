@@ -85,7 +85,6 @@ public class UsuariosWS : Service
         CustomUserSession userSession = this.SessionAs<CustomUserSession>();
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
-            ;
             var res = _usuarioService.GetPermisosUsuario(dbSigo, Convert.ToInt32(userSession.IDEmpresa), int.Parse(userSession.IDUsuario));
             return res;
         }

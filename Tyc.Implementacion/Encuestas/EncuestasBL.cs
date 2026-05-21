@@ -216,24 +216,19 @@ public class EncuestasBL : IEncuestaService
         var pendientes = _encuestaRepository.ObtenerEmpresaBloquear(context);
 
         foreach (var detalle in pendientes)
-        {           
+        {
             try
             {
-                if (detalle.Bloquear)
+                var empresa = await _empresaRepository.GetByIdAsync(context, detalle.IdEmpresa);
+                if (empresa != null)
                 {
-                    // 1. Consultar la empresa 
-                    //var empresa = context.GetTable<Modelo.Contexto.Empresa>().FirstOrDefault(e => e.EmpresaId == detalle.IdEmpresa);
-                    var empresa = await _empresaRepository.GetByIdAsync(context, detalle.IdEmpresa);
-                    if (empresa != null)
-                    {
-                        empresa.Estado = "BLOQUEADA";
-                        await _empresaRepository.UpdateAsync(context, empresa);
-                    }
+                    empresa.Estado = "BLOQUEADA";
+                    await _empresaRepository.UpdateAsync(context, empresa);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error procesando bloqueo de empresa {detalle.IdEmpresa}");                
+                _logger.LogError(ex, "Error procesando bloqueo de empresa {EmpresaId}", detalle.IdEmpresa);
             }
         }
     }

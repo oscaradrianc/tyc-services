@@ -409,7 +409,8 @@ public class ConsentimientoRepository : IConsentimientoRepository
 
         var query = (from c in context.GetTable<Consentimiento>()
                      join e in context.GetTable<Empresa>() on c.EmpresaId equals e.EmpresaId
-                     join u in context.GetTable<Usuario>() on c.UsuarioId equals u.UsuaUsua     
+                     join u in context.GetTable<Usuario>() on c.UsuarioId equals u.UsuaUsua into uGroup
+                     from u in uGroup.DefaultIfEmpty()
                      where (empresaId.Value == -1 || c.EmpresaId == empresaId.Value)
                         && (puedeVerTodo || c.UsuarioId == usuarioId)
                      select new ListaConsentimientos
@@ -417,7 +418,7 @@ public class ConsentimientoRepository : IConsentimientoRepository
                          Id = c.Id,
                          EmpresaId = c.EmpresaId,
                          UsuarioId = c.UsuarioId,
-                         NombreUsuario = u.UsuaNombre + ' ' + u.UsuaApellido,
+                         NombreUsuario = u == null ? null : u.UsuaNombre + ' ' + u.UsuaApellido,
                          TerminosEmpresaId = c.TerminosEmpresaId,
                          CompartirInfoId = c.CompartirInfoId,
                          RecibirOfertasId = c.RecibirOfertasId,
@@ -526,10 +527,24 @@ public class ConsentimientoRepository : IConsentimientoRepository
                     && (c.Estado == "F" || c.Estado == "P"))
                 .ToList());
 
+        // Batch all candidate policy IDs from existing consentimientos + new ones to avoid N+1 Texto queries
+        var todasPoliticasIds = consentimientos
+            .SelectMany(c => new[] { c.TerminosEmpresaId, c.CompartirInfoId, c.RecibirOfertasId, c.TerminosPersonaJuridicaId })
+            .Where(id => id.HasValue && id.Value > 0)
+            .Select(id => id.Value)
+            .Union(politicasNuevas.Where(p => p > 0))
+            .Distinct()
+            .ToList();
+
+        var textosActivosSet = new System.Collections.Generic.HashSet<int>(
+            context.GetTable<Texto>()
+                .Where(t => todasPoliticasIds.Contains(t.TextText) && t.TextEstado == "A")
+                .Select(t => t.TextText)
+                .ToList());
+
         foreach (var consentimiento in consentimientos)
         {
-            // Obtener políticas del consentimiento existente (solo las no-null)
-            var politicasExistente = new List<int?>();
+            var politicasExistente = new List<int>();
 
             if (consentimiento.TerminosEmpresaId.HasValue)
                 politicasExistente.Add(consentimiento.TerminosEmpresaId.Value);
@@ -540,51 +555,18 @@ public class ConsentimientoRepository : IConsentimientoRepository
             if (consentimiento.TerminosPersonaJuridicaId.HasValue)
                 politicasExistente.Add(consentimiento.TerminosPersonaJuridicaId.Value);
 
-            // Verificar si hay políticas nuevas que el existente no tenga
-            var politicasNuevasNoEnExistente = politicasNuevas
-                .Where(p => !politicasExistente.Contains(p))
-                .ToList();
-
-            if (politicasNuevasNoEnExistente.Any())
-            {
-                // Hay políticas nuevas, permitir crear
+            // If new policies are not a subset of existing ones, allow (there are new policies to capture)
+            if (politicasNuevas.Any(p => !politicasExistente.Contains(p)))
                 continue;
-            }
 
-            // Verificar si todas las políticas del nuevo están en el existente
-            var todasPoliticasEnExistente = politicasNuevas
-                .All(p => politicasExistente.Contains(p));
-
-            if (!todasPoliticasEnExistente)
-            {
-                // El nuevo tiene menos políticas que el existente, permitir
-                continue;
-            }
-
-            // Verificar que todas las políticas coincidan y estén activas
-            var politicasCoincidentes = politicasNuevas
-                .Where(p => politicasExistente.Contains(p))
-                .ToList();
+            // Check that all overlapping policies are still active — if any is inactive, allow (new version exists)
+            var politicasCoincidentes = politicasNuevas.Where(p => politicasExistente.Contains(p)).ToList();
 
             if (!politicasCoincidentes.Any())
-            {
-                // No hay coincidencias, permitir
                 continue;
-            }
 
-            // Verificar estado de las políticas en Textos
-            var textosActivos = context.GetTable<Texto>()
-                .Where(t => politicasCoincidentes.Contains(t.TextText)
-                    && t.TextEstado == "A")
-                .Select(t => t.TextText)
-                .ToList();
-
-            // Si todas las políticas coincidentes están activas → BLOQUEAR
-            if (textosActivos.Count == politicasCoincidentes.Count)
-            {
+            if (politicasCoincidentes.All(p => textosActivosSet.Contains(p)))
                 return consentimiento;
-            }
-            // Si alguna está inactiva → permitir (hay versión nueva)
         }
 
         return null;

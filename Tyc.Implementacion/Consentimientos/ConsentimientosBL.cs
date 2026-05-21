@@ -1,5 +1,6 @@
 ﻿using AdministradorCore.Cifrar;
 using AngleSharp.Dom;
+using Tyc.Implementacion.Helpers;
 using MapsterMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -909,25 +910,15 @@ public class ConsentimientosBL : IConsentimientoService
         return res;
     }
 
-    // Agregar a ConsentimientosBL.cs
-
     public async Task<List<ConsentimientoListItemRS>> ListarConsentimientosAsync(TycBaseContext context, DateTime? fecha,
         string estado, int empresaId, int usuarioId)
     {
-        // Validar estado si viene con valor
         if (!string.IsNullOrWhiteSpace(estado) && !new[] { "F", "P", "R" }.Contains(estado.ToUpper()))
         {
             throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
-        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
-        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
-        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
-
-        if (!concatenado.StartsWith(prefijo))
-            throw new InvalidOperationException("Prefijo inválido");
-
-        int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+        int idUsuario = IdUtils.ExtraerIdUsuario(usuarioId, empresaId);
 
         var consentimientos = await _repository.ListarPorFiltrosAsync(context, fecha, estado, empresaId, idUsuario);
         var resultado = new List<ConsentimientoListItemRS>();
@@ -974,25 +965,24 @@ public class ConsentimientosBL : IConsentimientoService
             throw new ArgumentException("Estado inválido. Valores permitidos: 'F' (Firmado), 'P' (Pendiente), 'R' (Rechazado)");
         }
 
-        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
-        ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
-        ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
-
-        if (!concatenado.StartsWith(prefijo))
-            throw new InvalidOperationException("Prefijo inválido");
-
-        int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+        int idUsuario = IdUtils.ExtraerIdUsuario(usuarioId, empresaId.GetValueOrDefault());
 
         var consentimientos = await _repository.ListarPorEmpresaAsync(context, empresaId, fechaInicial, fechaFinal, estado, idUsuario);
 
-        // Mapster no es async por defecto, pero podemos usar Select normal luego de obtener la lista async
+        // Batch-load all needed TipoIdentificacion grouped by empresa to avoid N+1 queries
+        var tiposDict = new Dictionary<(int, int), TipoIdentificacion>();
+        foreach (var grupo in consentimientos.Where(e => e.TipoIdentificacion1.HasValue).GroupBy(e => e.EmpresaId))
+        {
+            var ids = grupo.Select(e => e.TipoIdentificacion1.Value).Distinct().ToList();
+            var tipos = await _repository.GetTiposIdentificacionByIdsAsync(context, grupo.Key, ids);
+            foreach (var tipo in tipos)
+                tiposDict[(grupo.Key, tipo.TipoIdentificacionId)] = tipo;
+        }
+
         var resultado = new List<ConsentimientosRS>();
-        
+
         foreach(var entity in consentimientos)
         {
-            // Usamos loop explicito porque hay logica de descifrado y getTipo que requiere acceso a DB
-            // GetTipoIdentificacion podria ser async, asi que mejor un loop async
-            
             var cifrador = new CifradoHelper(entity.EmpresaId.ToString());
 
             string nombre = (entity.TipoPersona == "N") ? cifrador.Descifrar(entity.NombreCliente) : string.Empty;
@@ -1002,12 +992,11 @@ public class ConsentimientosBL : IConsentimientoService
             string identificacion = cifrador.Descifrar(entity.IdentificacionCliente) ?? string.Empty;
             string telefono = cifrador.Descifrar(entity.MovilCliente) ?? string.Empty;
             string nombreContacto = (entity.TipoPersona == "J") ? cifrador.Descifrar(entity.NombreContacto) : string.Empty;
-            
+
             string tipoIdentificacion = string.Empty;
-            if (entity.TipoIdentificacion1 != null) {
-                 var tipo = await _repository.GetTipoIdentificacionAsync(context, entity.EmpresaId, (int)entity.TipoIdentificacion1);
-                 tipoIdentificacion = tipo?.Descripcion;
-            }
+            if (entity.TipoIdentificacion1 != null &&
+                tiposDict.TryGetValue((entity.EmpresaId, (int)entity.TipoIdentificacion1), out var tipoEncontrado))
+                tipoIdentificacion = tipoEncontrado.Descripcion;
 
             resultado.Add(new ConsentimientosRS
             {

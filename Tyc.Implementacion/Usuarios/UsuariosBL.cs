@@ -1,6 +1,7 @@
 ﻿using Administrador.Modelo.Tipos;
 using Administrador.ServiceLogs.Auth;
 using AdministradorCore.Cifrar;
+using IdUtils = Tyc.Implementacion.Helpers.IdUtils;
 using General.Utilidades.Cache;
 using MapsterMapper;
 using Microsoft.Extensions.Logging;
@@ -476,14 +477,7 @@ namespace Tyc.Implementacion.Usuarios
         {
             try
             {
-                //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
-                ReadOnlySpan<char> concatenado = usuarioId.ToString().AsSpan();
-                ReadOnlySpan<char> prefijo = empresaId.ToString().AsSpan();
-
-                if (!concatenado.StartsWith(prefijo))
-                    throw new InvalidOperationException("Prefijo inválido");
-
-                int idUsuario = int.Parse(concatenado[prefijo.Length..]);
+                int idUsuario = IdUtils.ExtraerIdUsuario(usuarioId, empresaId);
 
                 var usuario = _usuarioRepository.GetById(context, idUsuario);
                 if (usuario != null)

@@ -678,6 +678,7 @@ public class PdfService : IPdfService
     {
         var nombreMes = ObtenerNombreMes(periodo);
         var estadoTexto = ObtenerTextoEstado(estado);
+        var logoBytes = TryGetLogoBytes(empresa.LogoBase64);
 
         var document = Document.Create(container =>
         {
@@ -700,7 +701,7 @@ public class PdfService : IPdfService
                     page.Margin(40);
                     page.DefaultTextStyle(x => x.FontSize(10).FontColor(Colors.Grey.Darken3));
 
-                    page.Header().Element(c => ComposeHeaderPagina(c, consentimiento, empresa));
+                    page.Header().Element(c => ComposeHeaderPagina(c, consentimiento, empresa, logoBytes));
                     page.Content().Element(c => ComposeContenidoConsentimientoOptimizado(c, consentimiento, datosRelacionados));
                     page.Footer().Element(c => ComposeFooterPagina(c, empresa));
                 });
@@ -744,13 +745,12 @@ public class PdfService : IPdfService
         });
     }
 
-    private void ComposeHeaderPagina(IContainer container, Consentimiento consentimiento, Empresa empresa)
+    private void ComposeHeaderPagina(IContainer container, Consentimiento consentimiento, Empresa empresa, byte[] logoBytes)
     {
         container.Column(col =>
         {
             col.Item().Row(row =>
             {
-                var logoBytes = TryGetLogoBytes(empresa.LogoBase64);
                 if (logoBytes != null)
                 {
                     row.ConstantItem(80).Height(50).Image(logoBytes, ImageScaling.FitArea);
