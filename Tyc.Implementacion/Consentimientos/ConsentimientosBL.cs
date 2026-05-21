@@ -127,7 +127,9 @@ public class ConsentimientosBL : IConsentimientoService
             nombreCompleto = $"{entity.NombreCliente} {entity.ApellidoCliente}".Trim();
             nombreCliente = entity.NombreCliente;
             apellidoCliente = entity.ApellidoCliente;
-            tipoIdent = await _repository.GetTipoIdentificacionAsync(context, entity.EmpresaId, (int)entity.TipoIdentificacion1);
+            tipoIdent = entity.TipoIdentificacion1.HasValue
+                ? await _repository.GetTipoIdentificacionAsync(context, entity.EmpresaId, entity.TipoIdentificacion1.Value)
+                : null;
         }
         else
         {
@@ -243,16 +245,7 @@ public class ConsentimientosBL : IConsentimientoService
         CifrarDatosSensibles(entity);
         entity.GuId = Guid.NewGuid();
 
-        //Con el cambio de para tomar el usuario de transaccional, el usua_usua esta concatenado con la empresa
-        ReadOnlySpan<char> concatenado = entity.UsuarioId.ToString().AsSpan();
-        ReadOnlySpan<char> prefijo = entity.EmpresaId.ToString().AsSpan();
-
-        if (!concatenado.StartsWith(prefijo))
-            throw new InvalidOperationException("Prefijo inválido");
-
-        int usuarioId = int.Parse(concatenado[prefijo.Length..]);
-
-        entity.UsuarioId = usuarioId;
+        entity.UsuarioId = IdUtils.ExtraerIdUsuario(entity.UsuarioId, entity.EmpresaId);
         entity.FechaCreacion = DateTime.Now;
 
         var created = await _repository.CrearConsentimientoAsync(context, entity);
@@ -481,9 +474,11 @@ public class ConsentimientosBL : IConsentimientoService
 
     private byte[] ConvertirBase64ABytes(string base64String)
     {
+        if (string.IsNullOrEmpty(base64String))
+            return Array.Empty<byte>();
+
         try
         {
-            // Limpiar prefijo data:image/png;base64, si existe
             var base64Data = base64String.Contains(",")
                 ? base64String.Split(',')[1]
                 : base64String;
@@ -780,6 +775,8 @@ public class ConsentimientosBL : IConsentimientoService
 
     private void CifrarDatosSensibles(int empresaId, DatosCliente datosCliente)
     {
+        if (datosCliente == null) return;
+
         var cifrador = new CifradoHelper(empresaId.ToString());
 
         datosCliente.Nombres = (datosCliente.TipoPersona == "N") ? cifrador.Cifrar(datosCliente.Nombres) : null;

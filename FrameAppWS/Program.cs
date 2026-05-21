@@ -126,7 +126,13 @@ public class Program
             PooledRedisClientManager redisMngr = new PooledRedisClientManager(
                 settings.GetRedisDbIndex(true),
                 settings.GetRedisUrl(true)
-            );
+            )
+            {
+                ConnectTimeout = 5000,        // ms — fail fast if Redis container is unreachable
+                SocketSendTimeout = 10000,    // ms — max wait to send a command
+                SocketReceiveTimeout = 10000, // ms — max wait for a response
+                IdleTimeOutSecs = 240,        // recycle stale connections after 4 min (handles Redis restarts)
+            };
             builder.Services.AddSingleton<IRedisClientsManager>(c => redisMngr);
 
             var levelSwitch = new LoggingLevelSwitch
