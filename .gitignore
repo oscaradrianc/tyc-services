@@ -26,3 +26,8 @@ Tyc.Implementacion/obj/
 Tyc.Implementacion/bin/
 CLAUDE.md
 .claude/
+
+# Secretos de despliegue (nunca commitear)
+produccion.env
+*.env
+!produccion.env.example
