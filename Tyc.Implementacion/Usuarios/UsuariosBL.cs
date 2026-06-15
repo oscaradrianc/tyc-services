@@ -489,7 +489,8 @@ namespace Tyc.Implementacion.Usuarios
                         {
                             UsuaPuedeCrearConsentimientos = usuario.UsuaPuedeCrearConsentimientos,
                             UsuaPuedeCrearUsuariosAdmin = usuario.UsuaPuedeCrearUsuariosAdmin,
-                            UsuaPuedeConsultarDatos = usuario.UsuaPuedeConsultarDatos
+                            UsuaPuedeConsultarDatos = usuario.UsuaPuedeConsultarDatos,
+                            UsuaEsSuperUsuario = usuario.UsuaEsSuperUsuario
                         }
                     };
                 }

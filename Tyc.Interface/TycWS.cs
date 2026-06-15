@@ -22,6 +22,7 @@ public class TycWS : Service
 {
     private readonly IMapper _mapper;
     private readonly IConsentimientoService _consentimientoService;
+    private readonly IConsentimientoRepository _repository;
     private readonly IPdfService _pdfService;
     private readonly IUsuarioService _usuarioService;
 
@@ -34,8 +35,33 @@ public class TycWS : Service
     {
         _mapper = mapper;
         _consentimientoService = consentimientoService;
+        _repository = repository;
         _pdfService = pdfService;
         _usuarioService = usuarioService;
+    }
+
+    private bool EsSuperUsuario(TycBaseContext dbSigo, CustomUserSession userSession)
+    {
+        var permisos = _usuarioService.GetPermisosUsuario(
+            dbSigo, Convert.ToInt32(userSession.IDEmpresa), int.Parse(userSession.IDUsuario));
+
+        return permisos.Success && permisos.Data?.UsuaEsSuperUsuario == "SI";
+    }
+
+    /// <summary>
+    /// Verifica que el consentimiento exista y pertenezca a la empresa de la sesión
+    /// (salvo super-usuarios). Responde NotFound en ambos casos para no revelar
+    /// la existencia de recursos de otras empresas.
+    /// </summary>
+    private async Task ValidarPertenenciaAsync(TycBaseContext dbSigo, CustomUserSession userSession, Guid consentimientoGuid)
+    {
+        var entity = await _repository.GetByGuidAsync(dbSigo, consentimientoGuid);
+
+        if (entity == null ||
+            (entity.EmpresaId != Convert.ToInt32(userSession.IDEmpresa) && !EsSuperUsuario(dbSigo, userSession)))
+        {
+            throw HttpError.NotFound($"Consentimiento {consentimientoGuid} no encontrado");
+        }
     }
 
     public async Task<ApiResponse<ConfirmacionConsentimientoRS>> Get(GetConsentimiento request)
@@ -44,6 +70,8 @@ public class TycWS : Service
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
+            await ValidarPertenenciaAsync(dbSigo, userSession, request.Id);
+
             var result = await _consentimientoService.ObtenerConfirmacionConsentimientoAsync(dbSigo, request.Id);
 
             if (result == null)
@@ -149,6 +177,14 @@ public class TycWS : Service
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
+            // El EmpresaId del request solo es válido si coincide con la empresa de
+            // la sesión; cruzar empresas (incluido -1 = todas) exige super-usuario.
+            int empresaSesion = Convert.ToInt32(userSession.IDEmpresa);
+            if (request.EmpresaId != empresaSesion && !EsSuperUsuario(dbSigo, userSession))
+            {
+                throw HttpError.Forbidden("No tiene permisos para consultar consentimientos de otra empresa.");
+            }
+
             var resultado = await _consentimientoService.ListarConsentimientosPorEmpresaAsync(
                 dbSigo,
                 request.EmpresaId,
@@ -175,6 +211,8 @@ public class TycWS : Service
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
+            await ValidarPertenenciaAsync(dbSigo, userSession, request.ConsentimientoId);
+
             var pdfBytes = await _pdfService.GenerarConsentimientoPdfAsync(
                 dbSigo,
                 request.ConsentimientoId,
@@ -202,12 +240,8 @@ public class TycWS : Service
                 throw HttpError.Unauthorized("El usuario no tiene permisos para eliminar registros.");
             }
 
-            // Verify if it exists
-            var confirmacion = await _consentimientoService.ObtenerConfirmacionConsentimientoAsync(dbSigo, request.Id);
-            if (confirmacion == null)
-            {
-                throw HttpError.NotFound($"Consentimiento {request.Id} no encontrado");
-            }
+            // Verifica existencia y que pertenezca a la empresa de la sesión
+            await ValidarPertenenciaAsync(dbSigo, userSession, request.Id);
 
             var res = await _consentimientoService.EliminarConsentimientoAsync(dbSigo, request.Id);
 
@@ -226,6 +260,12 @@ public class TycWS : Service
 
         using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
         {
+            int empresaSesion = Convert.ToInt32(userSession.IDEmpresa);
+            if (request.EmpresaId != empresaSesion && !EsSuperUsuario(dbSigo, userSession))
+            {
+                throw HttpError.Forbidden("No tiene permisos para consultar consentimientos de otra empresa.");
+            }
+
             var pdfBytes = await _pdfService.GenerarConsentimientosPorPeriodoPdfAsync(
                 dbSigo,
                 request.Periodo,
