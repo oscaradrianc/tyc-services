@@ -5,6 +5,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -104,6 +105,16 @@ public class Program
 
             builder.Services.AddMemoryCache();
 
+            // Detrás de nginx/ALB la IP de conexión es la del proxy; sin esto el
+            // rate limit público comparte un solo bucket para todos los clientes.
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                // La app solo es alcanzable a través del proxy; aceptamos sus headers.
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             builder.Services.Configure<FormOptions>(x =>
             {
                 x.ValueLengthLimit = int.MaxValue;
@@ -143,7 +154,8 @@ public class Program
 
             var app = builder.Build();
 
-        
+            app.UseForwardedHeaders();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
