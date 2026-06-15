@@ -38,32 +38,41 @@ public class NotificacionEncuestasWorker : BackgroundService
             {
                 _logger.LogInformation($"Ejecutando revisión de notificaciones a las {DateTime.Now}");
 
-                // Importante: Los BackgroundServices son Singleton. 
-                // Para usar clases "Scoped" (como tus repositorios y DbContext), debemos crear un Scope manual.
-                using (var scope = _serviceProvider.CreateScope())
+                // El catch va DENTRO del bucle: una excepción de negocio/BD no debe
+                // matar el worker hasta el próximo reinicio del sitio.
+                try
                 {
-                    var encuestaService = scope.ServiceProvider.GetRequiredService<IEncuestaService>();
-
-                    var settings = solg.lib.settings.Settings.GetInstance();
-                    settings.SetDbConfig(true);
-
-                    string connectionString = settings.GetConnection("Consentimiento").connectionString;
-                    var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
-
-                    using (TycBaseContext dbContext = TycContext.DataContext(connectionString, motorBD))
+                    // Importante: Los BackgroundServices son Singleton.
+                    // Para usar clases "Scoped" (como tus repositorios y DbContext), debemos crear un Scope manual.
+                    using (var scope = _serviceProvider.CreateScope())
                     {
-                        await encuestaService.ProcesarNotificacionesPendientesAsync(dbContext);
+                        var encuestaService = scope.ServiceProvider.GetRequiredService<IEncuestaService>();
+
+                        var settings = solg.lib.settings.Settings.GetInstance();
+                        settings.SetDbConfig(true);
+
+                        string connectionString = settings.GetConnection("Consentimiento").connectionString;
+                        var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+                        using (TycBaseContext dbContext = TycContext.DataContext(connectionString, motorBD))
+                        {
+                            await encuestaService.ProcesarNotificacionesPendientesAsync(dbContext);
+                        }
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error procesando notificaciones; se reintentará en el próximo ciclo.");
                 }
             }
         }
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Worker de notificaciones detenido por el sistema.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "Error fatal en el Worker de Notificaciones.");
         }
     }
 }
