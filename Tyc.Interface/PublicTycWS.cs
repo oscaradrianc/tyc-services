@@ -33,18 +33,25 @@ public class PublicTycWS : Service
         _passwordResetService = passwordResetService;
     }
 
-    public async Task<ApiResponse<FormularioConsentimientoRS>> Get(ObtenerFormularioConsentimiento request)
+    private string ObtenerClientIp()
     {
-        string clientIp = string.Empty;
-
+        // Con UseForwardedHeaders configurado en el host, UserHostAddress ya
+        // trae la IP real del cliente (X-Forwarded-For) y no la del proxy.
         if (IPAddress.TryParse(Request.UserHostAddress, out var ip))
         {
-            clientIp = ip.IsIPv4MappedToIPv6
+            return ip.IsIPv4MappedToIPv6
                 ? ip.MapToIPv4().ToString()
                 : ip.ToString();
         }
 
-        if (!ValidarRateLimit(clientIp))
+        return string.Empty;
+    }
+
+    public async Task<ApiResponse<FormularioConsentimientoRS>> Get(ObtenerFormularioConsentimiento request)
+    {
+        string clientIp = ObtenerClientIp();
+
+        if (!ValidarRateLimit($"{request.Subdominio}:{clientIp}"))
         {
             throw new HttpError(HttpStatusCode.TooManyRequests,
                     "TooManyRequests",
@@ -88,16 +95,16 @@ public class PublicTycWS : Service
         }
     }
 
-    private bool ValidarRateLimit(string ip)
+    private bool ValidarRateLimit(string clave, int maxSolicitudes = 10)
     {
-        string cacheKey = $"ratelimit_{ip}";
+        string cacheKey = $"ratelimit_{clave}";
 
         if (!_cache.TryGetValue(cacheKey, out int requestCount))
             requestCount = 0;
 
-        if (requestCount >= 10)
+        if (requestCount >= maxSolicitudes)
         {
-            _logger.LogWarning($"Rate limit excedido - IP: {ip}, Intentos: {requestCount}");
+            _logger.LogWarning($"Rate limit excedido - Clave: {clave}, Intentos: {requestCount}");
             return false;
         }
 
@@ -107,16 +114,9 @@ public class PublicTycWS : Service
 
     public async Task<ApiResponse<bool>> Put(ActualizarConsentimiento request)
     {
-        string clientIp = string.Empty;
+        string clientIp = ObtenerClientIp();
 
-        if (IPAddress.TryParse(Request.UserHostAddress, out var ip))
-        {
-            clientIp = ip.IsIPv4MappedToIPv6
-                ? ip.MapToIPv4().ToString()
-                : ip.ToString();
-        }
-
-        if (!ValidarRateLimit(clientIp))
+        if (!ValidarRateLimit($"{request.Subdominio}:{clientIp}"))
         {
             throw new HttpError(HttpStatusCode.TooManyRequests,
                     "TooManyRequests",
@@ -169,6 +169,14 @@ public class PublicTycWS : Service
 
     public object Post(ForgotPasswordRQ request)
     {
+        // Límite estricto: endpoint sensible a enumeración/spam de correos.
+        if (!ValidarRateLimit($"forgot:{ObtenerClientIp()}", maxSolicitudes: 5))
+        {
+            throw new HttpError(HttpStatusCode.TooManyRequests,
+                    "TooManyRequests",
+                    "Demasiados intentos. Intente en 1 minuto.");
+        }
+
         var settings = solg.lib.settings.Settings.GetInstance();
         settings.SetDbConfig(true);
 
@@ -192,6 +200,14 @@ public class PublicTycWS : Service
 
     public object Post(ResetPasswordRQ request)
     {
+        // Límite estricto: evita fuerza bruta contra tokens de reset.
+        if (!ValidarRateLimit($"reset:{ObtenerClientIp()}", maxSolicitudes: 5))
+        {
+            throw new HttpError(HttpStatusCode.TooManyRequests,
+                    "TooManyRequests",
+                    "Demasiados intentos. Intente en 1 minuto.");
+        }
+
         var settings = solg.lib.settings.Settings.GetInstance();
         settings.SetDbConfig(true);
         string connectionString = settings.GetConnection("Consentimiento").connectionString;

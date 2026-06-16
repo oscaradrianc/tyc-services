@@ -44,20 +44,33 @@ public class BloquearEmpresaWorker : BackgroundService
                 {
                     _logger.LogInformation("Ejecutando bloqueo de empresas: {Timestamp}", DateTime.Now);
 
-                    using (var scope = _serviceProvider.CreateScope())
+                    // El catch va DENTRO del bucle: una excepción de negocio/BD no debe
+                    // matar el worker hasta el próximo reinicio del sitio.
+                    try
                     {
-                        var encuestaService = scope.ServiceProvider.GetRequiredService<IEncuestaService>();
-
-                        var settings = solg.lib.settings.Settings.GetInstance();
-                        settings.SetDbConfig(true);
-
-                        string connectionString = settings.GetConnection("Consentimiento").connectionString;
-                        var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
-
-                        using (TycBaseContext dbContext = TycContext.DataContext(connectionString, motorBD))
+                        using (var scope = _serviceProvider.CreateScope())
                         {
-                            await encuestaService.ProcesarBloquearEmpresaAsync(dbContext);
+                            var encuestaService = scope.ServiceProvider.GetRequiredService<IEncuestaService>();
+
+                            var settings = solg.lib.settings.Settings.GetInstance();
+                            settings.SetDbConfig(true);
+
+                            string connectionString = settings.GetConnection("Consentimiento").connectionString;
+                            var motorBD = Administrador.Modelo.Contexto.MotorBD.POSTGRESQL;
+
+                            using (TycBaseContext dbContext = TycContext.DataContext(connectionString, motorBD))
+                            {
+                                await encuestaService.ProcesarBloquearEmpresaAsync(dbContext);
+                            }
                         }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error procesando bloqueo de empresas; se reintentará en el próximo ciclo.");
                     }
 
                 } while (await timer.WaitForNextTickAsync(stoppingToken));
@@ -66,10 +79,6 @@ public class BloquearEmpresaWorker : BackgroundService
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Worker de bloqueo de empresas detenido por el sistema.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(ex, "Error fatal en el Worker de bloqueo de empresas.");
         }
     }
 }
