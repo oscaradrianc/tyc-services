@@ -24,6 +24,7 @@ namespace Tyc.Modelo
         public Table<Usuario> Usuarios { get; set; }
         public Table <VUsuariosSist30> VUsuariosSist30 { get; set; }
         public Table<PasswordResetToken> PasswordResetTokens { get; set; }
+        public Table<EmailOutbox> EmailOutbox { get; set; }
         public Table<AsignacionEncuesta> AsignacionEncuestas { get; set; }
         public Table<DetalleAsignacion> DetalleAsignaciones { get; set; }
         public Table <RespuestasEncuesta> RespuestasEncuestas { get; set; }

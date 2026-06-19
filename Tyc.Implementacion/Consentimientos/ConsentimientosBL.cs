@@ -27,6 +27,7 @@ public class ConsentimientosBL : IConsentimientoService
     private readonly ITextoRepository _textoRepository;
     private readonly IEmpresaRepository _empresaRepository;
     private readonly IEmailService _emailService;
+    private readonly IEmailOutbox _emailOutbox;
     private readonly ILogger<ConsentimientosBL> _logger;
     private readonly ITextoService _textoService;
     private readonly ITemplateRenderer _templateRenderer;
@@ -39,6 +40,7 @@ public class ConsentimientosBL : IConsentimientoService
         ITextoRepository textoRepository,
         IEmpresaRepository empresaRepository,
         IEmailService emailService,
+        IEmailOutbox emailOutbox,
         ILogger<ConsentimientosBL> logger,
         IMapper mapper,
         ITextoService textoService,
@@ -51,6 +53,7 @@ public class ConsentimientosBL : IConsentimientoService
         _textoRepository = textoRepository;
         _empresaRepository = empresaRepository;
         _emailService = emailService;
+        _emailOutbox = emailOutbox;
         _logger = logger;
         _textoService = textoService;
         _templateRenderer = templateRenderer;
@@ -258,58 +261,36 @@ public class ConsentimientosBL : IConsentimientoService
 
         string linkFormulario = $"https://{empresa?.Subdominio}.consentimiento.co?id={Uri.EscapeDataString(guidEncriptado)}";
 
-        //Enviar email en background
+        // Encolar el correo en el outbox (F8): se persiste junto a la creación y lo envía
+        // el EmailOutboxWorker con reintentos. Ya no se usa Task.Run (fire-and-forget).
         if (empresa != null && !string.IsNullOrWhiteSpace(emailDestinatario))
-        {   
-            _ = Task.Run(async () =>
+        {
+            // Los textos ya vienen procesados
+            var valores = new Dictionary<string, string>
             {
-                try
-                {
-                     // Los textos ya vienen procesados
-                    var valores = new Dictionary<string, string>
-                    {
-                        { "TextoSaludo", textoSaludoPersonalizado },
-                        { "TextoAlternativo", textoAlternoPersonalizado },
-                        //{ "LogoEmpresa", string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64 },
-                        { "NombreCliente", nombreCompleto },
-                        { "NombreEmpresa", empresa.Nombre },
-                        { "NumeroContacto", empresa.Telefono },
-                        { "LinkFormulario", linkFormulario ?? string.Empty }
-                    };
+                { "TextoSaludo", textoSaludoPersonalizado },
+                { "TextoAlternativo", textoAlternoPersonalizado },
+                { "NombreCliente", nombreCompleto },
+                { "NombreEmpresa", empresa.Nombre },
+                { "NumeroContacto", empresa.Telefono },
+                { "LinkFormulario", linkFormulario ?? string.Empty }
+            };
 
-                    var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO, valores);
-                    var logo = string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64;
-                    byte[] bytesLogo = ConvertirBase64ABytes(logo);
+            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO, valores);
+            var logo = string.IsNullOrEmpty(empresa.LogoBase64) ? _empresaConfig.GetDefaultLogoBase64() : empresa.LogoBase64;
+            byte[] bytesLogo = ConvertirBase64ABytes(logo);
 
-                    var listaImagenes = new List<ImagenEnLinea>
-                    {
-                        new (bytesLogo, "LogoDinamico", "image/png"),
-                    };
+            var listaImagenes = new List<ImagenEnLinea>
+            {
+                new (bytesLogo, "LogoDinamico", "image/png"),
+            };
 
-                    AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
+            await _emailOutbox.EncolarAsync(context, new EmailOutboxItem(
+                emailDestinatario, asunto, htmlBody, listaImagenes,
+                TiposCorreoOutbox.ConsentimientoCreado, consentimientoId.ToString(), entity.EmpresaId));
 
-                    bool enviado = await _emailService.EnviarEmailAsync(emailDestinatario, asunto, vista);
-
-                    if (enviado)
-                    {
-                        _logger.LogInformation(
-                            "Email de consentimiento enviado exitosamente para consentimiento {ConsentimientoId}",
-                            consentimientoId);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "No se pudo enviar email de consentimiento para {ConsentimientoId}",
-                            consentimientoId);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "Error al enviar email de consentimiento {ConsentimientoId}",
-                        consentimientoId);
-                }
-            });
+            _logger.LogInformation(
+                "Email de consentimiento encolado para consentimiento {ConsentimientoId}", consentimientoId);
         }
         else
         {
@@ -1088,8 +1069,10 @@ public class ConsentimientosBL : IConsentimientoService
                 var texto = _textoRepository.GetById(context, politicaId);
                 if (texto != null)
                 {
-                   // Usamos el identificador porque el título no está disponible en la entidad Texto
-                   string nombrePolitica = texto.TextTipoTexto;
+                   // tgen_textos solo guarda el identificador (text_tipotexto); el nombre legible
+                   // de cada política vive en el frontend (gestor de políticas). Lo replicamos aquí
+                   // para que el correo muestre el nombre y no el código interno.
+                   string nombrePolitica = NombrePoliticaLegible(texto.TextTipoTexto);
                    listaPoliticasHtml += $"<li>{nombrePolitica}</li>";
                 }
             }
@@ -1176,13 +1159,14 @@ public class ConsentimientosBL : IConsentimientoService
 
         try
         {
-            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO_FIRMADO, valores);      
-            AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
-        
+            var htmlBody = _templateRenderer.RenderTemplate(ConstantesTyc.TEMPLATE_CONSENTIMIENTO_FIRMADO, valores);
 
             if (!string.IsNullOrEmpty(emailDestinatario))
             {
-               await _emailService.EnviarEmailAsync(emailDestinatario, asunto, vista);
+                // Encolar en el outbox (F8) dentro de la tx de la firma; lo envía el worker.
+                await _emailOutbox.EncolarAsync(context, new EmailOutboxItem(
+                    emailDestinatario, asunto, htmlBody, listaImagenes,
+                    TiposCorreoOutbox.ConsentimientoFirmado, consentimiento.GuId.ToString(), empresa.EmpresaId));
             }
         }
         catch (Exception ex)
@@ -1191,6 +1175,22 @@ public class ConsentimientosBL : IConsentimientoService
             throw; // Propagate to caller
         }
     }
+
+    /// <summary>
+    /// Nombre legible de una política a partir de su <c>text_tipotexto</c>. Espejo del mapeo
+    /// del gestor de políticas del frontend (tyc-web: politicas.component.ts + tyc.const.ts);
+    /// mantener sincronizado si se agregan tipos. Si el tipo es desconocido, devuelve el
+    /// identificador tal cual (no se pierde información).
+    /// </summary>
+    private static string NombrePoliticaLegible(string tipoTexto)
+        => tipoTexto switch
+        {
+            "POLITICA_TRARAMIENTODATOS" => "Política de Tratamiento de Datos Personales",
+            "TERMINOS_COMPARTIRDATOS" => "Política de Transferencia y Compartición de Datos",
+            "TERMINOS_RECIBIROFERTAS" => "Política de Envío de Ofertas y Comunicaciones Comerciales",
+            "TERMINOSPERSONAJURIDICA" => "Política de Personas Jurídicas",
+            _ => tipoTexto
+        };
 
     private void MapearDatosDecriptados(ConsentimientoData data, Consentimiento entity, int empresaId)
     {

@@ -87,6 +87,7 @@ public class Program
             builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
             builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
             builder.Services.AddScoped<IEncuestaRepository, EncuestaRepository>();
+            builder.Services.AddScoped<IEmailOutbox, EmailOutboxService>();
 
             builder.Services.AddScoped<IConsentimientoService, ConsentimientosBL>();
             builder.Services.AddScoped<ITextoService, TextosBL>();
@@ -130,6 +131,7 @@ public class Program
             builder.Services.AddHostedService<MonitoringWorker>();
             builder.Services.AddHostedService<NotificacionEncuestasWorker>();
             builder.Services.AddHostedService<BloquearEmpresaWorker>();
+            builder.Services.AddHostedService<EmailOutboxWorker>();
 
             var settings = Settings.GetInstance().SetConfiguration(builder.Configuration);
             settings.SetDbConfig(true);
