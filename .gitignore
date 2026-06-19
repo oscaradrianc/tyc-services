@@ -31,3 +31,5 @@ CLAUDE.md
 produccion.env
 *.env
 !produccion.env.example
+scripts/
+.mcp.json

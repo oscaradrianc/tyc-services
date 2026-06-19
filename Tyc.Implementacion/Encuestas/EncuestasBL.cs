@@ -20,19 +20,19 @@ public class EncuestasBL : IEncuestaService
     private readonly IEmpresaRepository _empresaRepository;
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IEmpresaConfiguration _empresaConfig;
-    private readonly IEmailService _emailService;
+    private readonly IEmailOutbox _emailOutbox;
     private readonly IUsuarioRepository _usuarioRepository;
 
-    public EncuestasBL(IEncuestaRepository encuestaRepository, ILogger<EncuestasBL> logger, 
+    public EncuestasBL(IEncuestaRepository encuestaRepository, ILogger<EncuestasBL> logger,
         IEmpresaRepository empresaRepository, ITemplateRenderer templateRenderer, IEmpresaConfiguration empresaConfig,
-        IEmailService emailService, IUsuarioRepository usuarioRepository)
+        IEmailOutbox emailOutbox, IUsuarioRepository usuarioRepository)
     {
         _encuestaRepository = encuestaRepository;
         _logger = logger;
         _empresaRepository = empresaRepository;
         _templateRenderer = templateRenderer;
         _empresaConfig = empresaConfig;
-        _emailService = emailService;
+        _emailOutbox = emailOutbox;
         _usuarioRepository = usuarioRepository;
     }
 
@@ -119,9 +119,10 @@ public class EncuestasBL : IEncuestaService
                         new (bytesLogo, "LogoAnato", "image/png"),
                     };
 
-                AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
-
-                await _emailService.EnviarEmailAsync(usuario.UsuaEmail, "Gracias por su participación", vista);
+                // Encolar en el outbox (F8) dentro de la tx; lo envía el worker.
+                await _emailOutbox.EncolarAsync(context, new EmailOutboxItem(
+                    usuario.UsuaEmail, "Gracias por su participación", htmlBody, listaImagenes,
+                    TiposCorreoOutbox.EncuestaAgradecimiento, detalleId.ToString(), null));
             }
        
             return respuesta;
@@ -175,19 +176,13 @@ public class EncuestasBL : IEncuestaService
                         new (bytesLogo, "LogoAnato", "image/png"),
                     };
 
-                AlternateView vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, listaImagenes);
+                // Encolar en el outbox (F8): el envío y sus reintentos los maneja el
+                // EmailOutboxWorker. Encolar con éxito = entregado a la cola → marcamos "S".
+                await _emailOutbox.EncolarAsync(context, new EmailOutboxItem(
+                    empresa.MailDelContacto, $"Nueva Encuesta Asignada: {asignacion.Nombre}", htmlBody, listaImagenes,
+                    TiposCorreoOutbox.EncuestaNotif, detalle.IdDetalle.ToString(), detalle.EmprEmpr));
 
-                bool enviado = await _emailService.EnviarEmailAsync(empresa.MailDelContacto, 
-                    $"Nueva Encuesta Asignada: {asignacion.Nombre}", vista);
-
-                if (enviado)
-                {
-                    _encuestaRepository.ActualizarEstadoNotificacion(context, detalle.IdDetalle, "S", intentosActuales, null);
-                }
-                else
-                {
-                    _encuestaRepository.ActualizarEstadoNotificacion(context, detalle.IdDetalle, "N", intentosActuales, "Error desconocido en el servicio de correo");
-                }
+                _encuestaRepository.ActualizarEstadoNotificacion(context, detalle.IdDetalle, "S", intentosActuales, null);
             }
             catch (Exception ex)
             {

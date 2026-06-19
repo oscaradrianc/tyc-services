@@ -13,6 +13,12 @@ namespace Tyc.Interface.Request
         public Guid Id { get; set; }
     }
 
+    [Route("/consentimientos/{Id}/estado-correo", "GET")]
+    public class GetEstadoCorreoConsentimiento : IReturn<ApiResponse<EstadoCorreoRS>>
+    {
+        public Guid Id { get; set; }
+    }
+
     [Route("/consentimientos", "POST")]
     public class ConsentimientoRQ : IReturn<ApiResponse<Guid>>
     {

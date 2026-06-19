@@ -25,19 +25,22 @@ public class TycWS : Service
     private readonly IConsentimientoRepository _repository;
     private readonly IPdfService _pdfService;
     private readonly IUsuarioService _usuarioService;
+    private readonly IEmailOutbox _emailOutbox;
 
     public TycWS(
         IConsentimientoService consentimientoService,
         IConsentimientoRepository repository,
         IMapper mapper,
         IPdfService pdfService,
-        IUsuarioService usuarioService)
+        IUsuarioService usuarioService,
+        IEmailOutbox emailOutbox)
     {
         _mapper = mapper;
         _consentimientoService = consentimientoService;
         _repository = repository;
         _pdfService = pdfService;
         _usuarioService = usuarioService;
+        _emailOutbox = emailOutbox;
     }
 
     private bool EsSuperUsuario(TycBaseContext dbSigo, CustomUserSession userSession)
@@ -80,6 +83,33 @@ public class TycWS : Service
             return new ApiResponse<ConfirmacionConsentimientoRS>
             {
                 Data = result,
+                Mensaje = "",
+                Success = true
+            };
+        }
+    }
+
+    /// <summary>
+    /// Estado del correo de consentimiento en el outbox (F8): permite al admin ver si
+    /// el correo llegó, está pendiente o falló. Solo lectura; valida pertenencia igual
+    /// que el resto (NotFound si el consentimiento no es de la empresa de la sesión).
+    /// </summary>
+    public async Task<ApiResponse<EstadoCorreoRS>> Get(GetEstadoCorreoConsentimiento request)
+    {
+        CustomUserSession userSession = SessionAs<CustomUserSession>();
+
+        using (TycBaseContext dbSigo = TycContext.DataContext(userSession))
+        {
+            await ValidarPertenenciaAsync(dbSigo, userSession, request.Id);
+
+            var estado = await _emailOutbox.ConsultarEstadoAsync(dbSigo, request.Id.ToString());
+
+            if (estado == null)
+                throw HttpError.NotFound($"No hay correo registrado para el consentimiento {request.Id}");
+
+            return new ApiResponse<EstadoCorreoRS>
+            {
+                Data = estado,
                 Mensaje = "",
                 Success = true
             };

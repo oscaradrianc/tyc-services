@@ -15,18 +15,18 @@ public class PasswordResetService : IPasswordResetService
 {
     private readonly IPasswordResetRepository _resetRepo;
     private readonly IUsuarioRepository _usuarioRepo;
-    private readonly IEmailService _emailService; // tu servicio de email existente
+    private readonly IEmailOutbox _emailOutbox; // cola persistente de correos (F8)
     private readonly ITemplateRenderer _templateRenderer; // para construir el HTML del email
 
     public PasswordResetService(
         IPasswordResetRepository resetRepo,
         IUsuarioRepository usuarioRepo,
-        IEmailService emailService,
+        IEmailOutbox emailOutbox,
         ITemplateRenderer templateRenderer)
     {
         _resetRepo = resetRepo;
         _usuarioRepo = usuarioRepo;
-        _emailService = emailService;
+        _emailOutbox = emailOutbox;
         _templateRenderer = templateRenderer;
     }
 
@@ -58,9 +58,12 @@ public class PasswordResetService : IPasswordResetService
 
         var resetLink = $"{frontendBaseUrl}/#/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email)}";
         var htmlBody = BuildResetEmailHtml(usuario.UsuaNombre, resetLink);
-        var vista = _templateRenderer.ConstruirVistaConImagen(htmlBody, []);
 
-        _emailService.EnviarEmailAsync(email, "Recuperación de contraseña", vista);
+        // Encolar en el outbox (F8): el correo de recuperación ya no se pierde si SMTP falla.
+        _emailOutbox.EncolarAsync(context, new EmailOutboxItem(
+            email, "Recuperación de contraseña", htmlBody, [],
+            TiposCorreoOutbox.PasswordReset, usuario.UsuaUsua.ToString(), null))
+            .GetAwaiter().GetResult();
     }
 
     public void ResetPassword(TycBaseContext context, string token, string email, string newPassword)
