@@ -163,6 +163,35 @@ public class Program
                 app.UseDeveloperExceptionPage();
             }
 
+            // --- Secretos de firma JWT: tolerar alias sin punto y fallar rápido si faltan ---
+            // 'jwt.AuthKeyBase64' lleva un punto en el nombre, que algunos runtimes no aceptan
+            // como variable de entorno; aceptamos un alias sin punto (JWT_AUTHKEY_BASE64 /
+            // JWT_SECRET) y lo proyectamos sobre la clave que espera ServiceStack. Si la llave
+            // queda vacía, el login revienta dentro del proveedor de auth con un
+            // ArgumentOutOfRangeException poco claro: mejor abortar el arranque con un mensaje
+            // explícito.
+            static string PrimerNoVacio(string a, string b)
+                => !string.IsNullOrWhiteSpace(a) ? a : (b ?? string.Empty);
+
+            var jwtAuthKey = PrimerNoVacio(
+                builder.Configuration["jwt.AuthKeyBase64"],
+                Environment.GetEnvironmentVariable("JWT_AUTHKEY_BASE64"));
+
+            if (string.IsNullOrWhiteSpace(jwtAuthKey))
+            {
+                throw new InvalidOperationException(
+                    "Falta el secreto de firma JWT 'jwt.AuthKeyBase64' (o el alias JWT_AUTHKEY_BASE64). " +
+                    "Defínelo en produccion.env / variables de entorno; sin él el login lanza " +
+                    "ArgumentOutOfRangeException al derivar la llave.");
+            }
+            builder.Configuration["jwt.AuthKeyBase64"] = jwtAuthKey;
+
+            var jwtSecret = PrimerNoVacio(
+                builder.Configuration["secret"],
+                Environment.GetEnvironmentVariable("JWT_SECRET"));
+            if (!string.IsNullOrWhiteSpace(jwtSecret))
+                builder.Configuration["secret"] = jwtSecret;
+
             var appHost = new AppHostFramework(Log.Logger)
             {
                 AppSettings = new NetCoreAppSettings(builder.Configuration)
