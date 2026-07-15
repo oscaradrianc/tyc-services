@@ -38,5 +38,11 @@ namespace Tyc.Interface.Response.Consentimientos
         public string FuncionCreo { get; set; }
         public string MedioFirmo { get; set; }
         public byte[] FirmaImagen { get; set; }
+
+        /// <summary>Texto CONSENTIMIENTO de la empresa con las variables {{...}} ya resueltas. Null si no lo tiene configurado.</summary>
+        public string TextoConsentimiento { get; set; }
+
+        /// <summary>Texto TEXTO_CONFIRMACION de la empresa con las variables {{...}} ya resueltas. Null si no lo tiene configurado.</summary>
+        public string TextoConfirmacion { get; set; }
     }
 }

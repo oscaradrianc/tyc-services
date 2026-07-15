@@ -9,6 +9,10 @@
             System.Environment.GetEnvironmentVariable("TYC_LLAVE_PARAMETRO_LINK") ?? "aF8S-Z";
         public const string tipoTextoSaludoCorreo = "CORREO_SALUDO";
         public const string tipoTextoTextoAlternoCorreo = "CORREO_PIE";
+        public const string tipoTextoConsentimiento = "CONSENTIMIENTO";
+        public const string tipoTextoConfirmacion = "TEXTO_CONFIRMACION";
+        // Longitud de cons_referencia en BD (varchar(200)); ver scripts/ampliar_cons_referencia.sql.
+        public const int MaxLongitudReferencia = 200;
         public const string TEMPLATE_CONSENTIMIENTO = "consentimiento-creado";        
         public const string TEMPLATE_CONSENTIMIENTO_FIRMADO = "consentimiento-firmado";
         public const string TEMPLATE_NUEVA_ENCUESTA = "mail-invitacion";

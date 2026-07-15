@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Tyc.Interface.Repositories;
 using Tyc.Interface.Request;
 using Tyc.Interface.Response.Consentimientos;
+using Tyc.Interface.Response.Textos;
 using Tyc.Interface.Services;
 using Tyc.Modelo;
 using Tyc.Modelo.Contexto;
@@ -33,6 +34,13 @@ public class ConsentimientosBL : IConsentimientoService
     private readonly ITemplateRenderer _templateRenderer;
     private readonly IConfiguration _configuration;
     private readonly IEmpresaConfiguration _empresaConfig;
+
+    /// <summary>
+    /// Párrafo del correo de aceptación para las empresas que no tienen TEXTO_CONFIRMACION
+    /// configurado en tgen_textos. Las que sí lo tienen usan el suyo.
+    /// </summary>
+    private const string MensajeConfirmacionPorDefecto =
+        "Tus datos serán tratados con estricta confidencialidad y utilizados únicamente para los fines expresamente autorizados, garantizando el cumplimiento de nuestras políticas de tratamiento de datos personales.";
 
     public ConsentimientosBL(
         IConsentimientoRepository consentimientoRepository,
@@ -112,11 +120,121 @@ public class ConsentimientosBL : IConsentimientoService
         };
 
         DescifrarDatosSensibles(response, entity, entity.EmpresaId);
+
+        // Textos que muestran el back-office y la app móvil tras crear el consentimiento,
+        // con las variables {{...}} ya resueltas: el frontend solo los pinta.
+        var empresa = await _empresaRepository.GetByIdAsync(dbSigo, entity.EmpresaId);
+        var textos = await _textoService.ObtenerTextosPorEmpresaYTiposComoDiccionarioAsync(
+            dbSigo,
+            entity.EmpresaId,
+            new List<string> { ConstantesTyc.tipoTextoConsentimiento, ConstantesTyc.tipoTextoConfirmacion });
+
+        bool esJuridica = entity.TipoPersona == "J";
+        var variables = ConstruirVariablesTexto(
+            empresa,
+            esJuridica ? response.NombreContacto : response.Nombres,
+            esJuridica ? string.Empty : response.Apellidos,
+            response.Email,
+            response.Telefono,
+            response.Identificacion,
+            tipoDoc?.Descripcion,
+            entity.Referencia,
+            entity.FechaCreacion);
+
+        response.TextoConsentimiento = ResolverTexto(textos, ConstantesTyc.tipoTextoConsentimiento, variables);
+        response.TextoConfirmacion = ResolverTexto(textos, ConstantesTyc.tipoTextoConfirmacion, variables);
+
         return response;
+    }
+
+    /// <summary>
+    /// Devuelve el texto del tipo pedido con sus variables resueltas, o null si la empresa no lo tiene.
+    /// </summary>
+    private string ResolverTexto(
+        Dictionary<string, TextoResponse> textos,
+        string tipoTexto,
+        Dictionary<string, string> variables)
+    {
+        return textos.TryGetValue(tipoTexto, out var texto)
+            ? _textoService.ProcesarPlantillaTexto(texto.TextoTerminos, variables)
+            : null;
+    }
+
+    /// <summary>
+    /// Catálogo de variables {{...}} disponibles para los textos que edita la agencia
+    /// (tgen_textos: CORREO_SALUDO, CORREO_PIE, CONSENTIMIENTO, TEXTO_CONFIRMACION).
+    /// Los valores deben llegar ya descifrados. Se documenta a las agencias en el FAQ
+    /// del back-office; mantener ambos sincronizados al agregar una variable.
+    /// </summary>
+    private static Dictionary<string, string> ConstruirVariablesTexto(
+        Empresa empresa,
+        string nombreCliente,
+        string apellidoCliente,
+        string emailCliente,
+        string movilCliente,
+        string identificacionCliente,
+        string tipoIdentificacion,
+        string referencia,
+        DateTime fecha)
+    {
+        return new Dictionary<string, string>
+        {
+            // Datos del cliente
+            { "NombreCliente", nombreCliente ?? "" },
+            { "ApellidoCliente", apellidoCliente ?? "" },
+            { "NombreCompletoCliente", $"{nombreCliente} {apellidoCliente}".Trim() },
+            { "EmailCliente", emailCliente ?? "" },
+            { "MovilCliente", movilCliente ?? "" },
+            { "IdentificacionCliente", identificacionCliente ?? "" },
+            { "TipoIdentificacionCliente", tipoIdentificacion ?? "" },
+            { "FechaCreacion", fecha.ToString("dd/MM/yyyy HH:mm") },
+
+            // Datos del consentimiento
+            { "Referencia", referencia ?? "" },
+
+            // Datos de la empresa
+            { "NombreEmpresa", empresa?.Nombre ?? "" },
+            { "NumeroContacto", empresa?.Telefono ?? "" },
+            { "EmailEmpresa", empresa?.MailContactos ?? "" },
+            { "DireccionEmpresa", empresa?.Direccion ?? "" }
+        };
+    }
+
+    /// <summary>
+    /// Igual que la sobrecarga anterior, partiendo de los datos ya descifrados del consentimiento.
+    /// En persona jurídica el "cliente" es el contacto, como en el correo de creación.
+    /// </summary>
+    private static Dictionary<string, string> ConstruirVariablesTexto(
+        Empresa empresa,
+        ConsentimientoData datos,
+        string tipoIdentificacion,
+        DateTime fecha)
+    {
+        bool esJuridica = datos.TipoPersona == "J";
+
+        return ConstruirVariablesTexto(
+            empresa,
+            esJuridica ? datos.NombreContacto : datos.Nombres,
+            esJuridica ? string.Empty : datos.Apellidos,
+            datos.Email,
+            datos.Telefono,
+            datos.Identificacion,
+            tipoIdentificacion,
+            datos.Referencia,
+            fecha);
     }
 
     public async Task<(Guid? Id, ConsentimientoExistenteRS Existente)> CrearConsentimientoAsync(TycBaseContext context, Consentimiento entity, bool forceInsert = false)
     {
+        // cons_referencia es varchar(200): sin esta guarda, un valor más largo revienta en
+        // SubmitChanges() como un 500 de Postgres en vez de un error de validación.
+        if (entity.Referencia?.Length > ConstantesTyc.MaxLongitudReferencia)
+        {
+            throw new ArgumentException(
+                $"La referencia no puede superar los {ConstantesTyc.MaxLongitudReferencia} caracteres.",
+                nameof(entity.Referencia));
+        }
+
         //Guardar datos ANTES de cifrar (para el email)
         string emailDestinatario = entity.EmailCliente;
 
@@ -204,24 +322,16 @@ public class ConsentimientosBL : IConsentimientoService
             entity.EmpresaId,
             tiposRequeridos);
 
-        var variables = new Dictionary<string, string>
-        {
-            // Datos del cliente
-            { "NombreCliente", nombreCliente },
-            { "ApellidoCliente", apellidoCliente },
-            { "NombreCompletoCliente", $"{nombreCliente} {apellidoCliente}".Trim() },
-            { "EmailCliente", emailDestinatario },
-            { "MovilCliente", movilCliente },
-            { "IdentificacionCliente", identificacionCliente },
-            { "TipoIdentificacionCliente", tipoIdent?.Descripcion ?? "" },
-            { "FechaCreacion", DateTime.Now.ToString("dd/MM/yyyy HH:mm") },
-        
-            // Datos de la empresa
-            { "NombreEmpresa", empresa?.Nombre ?? "" },
-            { "NumeroContacto", empresa?.Telefono ?? "" },
-            { "EmailEmpresa", empresa?.MailContactos ?? "" },
-            { "DireccionEmpresa", empresa?.Direccion ?? "" }
-        };
+        var variables = ConstruirVariablesTexto(
+            empresa,
+            nombreCliente,
+            apellidoCliente,
+            emailDestinatario,
+            movilCliente,
+            identificacionCliente,
+            tipoIdent?.Descripcion,
+            entity.Referencia,
+            DateTime.Now);
 
         string textoSaludoPersonalizado = null;
 
@@ -506,17 +616,29 @@ public class ConsentimientosBL : IConsentimientoService
             }
 
             var textos = await _textoRepository.GetByEmpresaAsync(context, res.EmpresaConsentimiento.EmpresaId, true);
+            var datosConsentimiento = MapearConsentimiento(res.Consentimiento, res.EmpresaConsentimiento.EmpresaId);
+
+            // Los textos que edita la agencia pueden llevar variables {{...}} (p. ej. {{Referencia}}).
+            // Se resuelven aquí para que el frontend solo tenga que pintarlos.
+            var tipoIdentFormulario = res.TiposIdentificacion?
+                .FirstOrDefault(t => t.TipoIdentificacionId == res.Consentimiento.TipoIdentificacion1);
+
+            var variables = ConstruirVariablesTexto(
+                res.EmpresaConsentimiento,
+                datosConsentimiento,
+                tipoIdentFormulario?.Descripcion,
+                res.Consentimiento.FechaCreacion);
 
             result = new FormularioConsentimientoRS
             {
                 Config = MapearConfigEmpresa(res.EmpresaConsentimiento, res.TiposIdentificacion),
-               
-                Consentimiento = MapearConsentimiento(res.Consentimiento, res.EmpresaConsentimiento.EmpresaId),
+
+                Consentimiento = datosConsentimiento,
                 Textos = textos.Select(t => new TextoData
                 {
                     Id = t.TextText,
                     TipoTexto = t.TextTipoTexto,
-                    TextoTerminos = t.TextTextoDelosTerminos
+                    TextoTerminos = _textoService.ProcesarPlantillaTexto(t.TextTextoDelosTerminos, variables)
                 }).ToList(),
                 EsValido = true
             };
@@ -1042,9 +1164,36 @@ public class ConsentimientosBL : IConsentimientoService
 
         // Preparar variables para el template
         var estadoTitulo = (estado == "R") ? "el rechazo" : "su aceptación";
-        var mensajeEstado = (estado == "R") ? "" : 
-            "Tus datos serán tratados con estricta confidencialidad y utilizados únicamente para los fines expresamente autorizados, garantizando el cumplimiento de nuestras políticas de tratamiento de datos personales.";
-        
+
+        // El párrafo de confirmación lo edita cada agencia (TEXTO_CONFIRMACION en tgen_textos) y
+        // puede llevar variables {{...}}. Si la empresa no lo tiene configurado se usa el texto por
+        // defecto. En un rechazo no se muestra ningún mensaje (comportamiento previo).
+        var mensajeEstado = "";
+        if (estado != "R")
+        {
+            var textosConfirmacion = await _textoService.ObtenerTextosPorEmpresaYTiposComoDiccionarioAsync(
+                context,
+                empresa.EmpresaId,
+                new List<string> { ConstantesTyc.tipoTextoConfirmacion });
+
+            string plantillaConfirmacion =
+                textosConfirmacion.TryGetValue(ConstantesTyc.tipoTextoConfirmacion, out var textoConfirmacion)
+                && !string.IsNullOrWhiteSpace(textoConfirmacion.TextoTerminos)
+                    ? textoConfirmacion.TextoTerminos
+                    : MensajeConfirmacionPorDefecto;
+
+            var tipoIdent = consentimiento.TipoIdentificacion1.HasValue
+                ? await _repository.GetTipoIdentificacionAsync(
+                    context, empresa.EmpresaId, consentimiento.TipoIdentificacion1.Value)
+                : null;
+
+            mensajeEstado = _textoService.ProcesarPlantillaTexto(
+                plantillaConfirmacion,
+                ConstruirVariablesTexto(
+                    empresa, datosDecriptados, tipoIdent?.Descripcion, consentimiento.FechaCreacion));
+        }
+
+
         var fechaConfirmacion = (fechaFirma == default) ? DateTime.Now : fechaFirma;
         // Formato dd MMMM yyyy (ej: 21 January 2026) - Usamos cultura ES si es posible, sino default
         var fechaStr = fechaConfirmacion.ToString("dd MMMM yyyy", System.Globalization.CultureInfo.CreateSpecificCulture("es-CO"));
@@ -1196,12 +1345,16 @@ public class ConsentimientosBL : IConsentimientoService
     {
         var cifrador = new CifradoHelper(empresaId.ToString());
 
+        data.TipoPersona = entity.TipoPersona;
         data.Nombres = (entity.TipoPersona == "N") ? cifrador.Descifrar(entity.NombreCliente) : "";
         data.Apellidos = (entity.TipoPersona == "N") ? cifrador.Descifrar(entity.ApellidoCliente) : "";
         data.RazonSocial = (entity.TipoPersona == "J") ? cifrador.Descifrar(entity.RazonSocial) : "";
+        data.NombreContacto = (entity.TipoPersona == "J") ? cifrador.Descifrar(entity.NombreContacto) : "";
         
         data.Email = cifrador.Descifrar(entity.EmailCliente);
         data.Identificacion = cifrador.Descifrar(entity.IdentificacionCliente);
+        data.Telefono = cifrador.Descifrar(entity.MovilCliente);
+        data.Referencia = entity.Referencia;
     }
 
     string GetSubdomain(string value)
